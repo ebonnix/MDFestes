@@ -22,7 +22,7 @@ export default function SiteNav() {
           <span className="font-heading text-3xl font-black text-gray-400 tracking-tight">MDF</span>
         </Link>
 
-        {/* Desktop nav */}
+        {/* Desktop nav links */}
         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-white/80">
           {navLinks.map((link) => (
             <Link
@@ -35,8 +35,18 @@ export default function SiteNav() {
           ))}
         </div>
 
-        {/* Get Bid Now + Phone + hamburger */}
-        <div className="flex items-center gap-3">
+        {/* Mobile: centered Get Bid Now */}
+        <div className="md:hidden flex-1 flex justify-center">
+          <Link
+            href="/contact"
+            className="px-5 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-bold rounded-lg transition-colors shadow-lg shadow-green-600/20"
+          >
+            Get Bid Now
+          </Link>
+        </div>
+
+        {/* Desktop: Get Bid Now + Phone */}
+        <div className="hidden md:flex items-center gap-3">
           <Link
             href="/contact"
             className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-bold rounded-lg transition-colors shadow-lg shadow-green-600/20"
@@ -45,19 +55,21 @@ export default function SiteNav() {
           </Link>
           <a
             href={`tel:${CONTACT_INFO.phone}`}
-            className="hidden sm:flex items-center gap-2 text-sm font-semibold text-green-400 hover:text-green-300 transition-colors"
+            className="flex items-center gap-2 text-sm font-semibold text-green-400 hover:text-green-300 transition-colors"
           >
             <Phone className="w-4 h-4" />
             <span>{CONTACT_INFO.phone}</span>
           </a>
-          <button
-            className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-            onClick={() => setOpen((v) => !v)}
-            aria-label="Toggle menu"
-          >
-            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
         </div>
+
+        {/* Mobile hamburger */}
+        <button
+          className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          onClick={() => setOpen((v) => !v)}
+          aria-label="Toggle menu"
+        >
+          {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
       </div>
 
       {/* Mobile drawer */}
@@ -78,16 +90,9 @@ export default function SiteNav() {
                 {link.label}
               </Link>
             ))}
-            <Link
-              href="/contact"
-              onClick={() => setOpen(false)}
-              className="mt-2 py-3 px-4 rounded-lg text-sm font-bold text-white bg-green-600 text-center"
-            >
-              Get Bid Now
-            </Link>
             <a
               href={`tel:${CONTACT_INFO.phone}`}
-              className="mt-1 py-3 px-4 rounded-lg text-sm font-semibold text-green-400 bg-green-500/10 flex items-center gap-2"
+              className="mt-2 py-3 px-4 rounded-lg text-sm font-semibold text-green-400 bg-green-500/10 flex items-center gap-2"
             >
               <Phone className="w-4 h-4" />
               {CONTACT_INFO.phone}
