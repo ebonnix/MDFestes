@@ -30,3 +30,11 @@
 - [x] Add responsive mobile hamburger menu to all pages
 - [x] Build bid/contact form with fields: name, phone, email, service type, description, photo upload
 - [x] Wire form to send email notification to mdfplowing@gmail.com via owner notification system
+- [x] Replace Grading & Land Prep image with excavator/skid steer doing site grading
+- [x] Replace Driveway Maintenance image with gravel driveway being graded/replenished
+- [ ] Generate Mike in MDF t-shirt on job site for credibility section
+- [x] Add Mike's photo next to MDF logo on homepage
+- [x] Update admin password to 9708895771
+- [x] Enhanced admin panel: review management (add/delete)
+- [x] Enhanced admin panel: service image management (delete/add photos per service)
+- [x] Enhanced admin panel: Instagram posting UI (placeholder/future feature for @mdfplowing)

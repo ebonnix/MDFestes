@@ -175,14 +175,14 @@ export const PLOWING_SERVICES: ServiceItem[] = [
     id: "grading",
     name: "Grading & Land Prep",
     description: "Site grading and land preparation for construction projects. Proper drainage solutions for mountain properties.",
-    image: "https://d2xsxph8kpxj0f.cloudfront.net/310419663031726902/dXSKZo4CTV8xN7g2WYCuTk/hero-mountains-mipJG3cmsAjkrKJVsv7hF6.webp",
+    image: "https://d2xsxph8kpxj0f.cloudfront.net/310419663031726902/dXSKZo4CTV8xN7g2WYCuTk/service-grading-new-JJogSVEspTSa38ywd25Xzh.webp",
     category: "plowing",
   },
   {
     id: "driveway-maintenance",
     name: "Driveway Maintenance",
     description: "Keep your mountain driveway in top condition year-round. Gravel replenishment, grading, and seasonal maintenance services.",
-    image: "https://d2xsxph8kpxj0f.cloudfront.net/310419663031726902/dXSKZo4CTV8xN7g2WYCuTk/hero-mountains-mipJG3cmsAjkrKJVsv7hF6.webp",
+    image: "https://d2xsxph8kpxj0f.cloudfront.net/310419663031726902/dXSKZo4CTV8xN7g2WYCuTk/service-driveway-new-aCjkwHhq9hZiDp3Nvyfgp8.webp",
     category: "plowing",
   },
 ];
@@ -198,4 +198,5 @@ export const IMAGES = {
   heroPlow: "https://d2xsxph8kpxj0f.cloudfront.net/310419663031726902/dXSKZo4CTV8xN7g2WYCuTk/hero-plow-FJnmhTC24uFh2EwYujxTAx.webp",
   heroConstruction: "https://d2xsxph8kpxj0f.cloudfront.net/310419663031726902/dXSKZo4CTV8xN7g2WYCuTk/hero-construction-e2KWq9FQQZmJbWXbpFfwTp.webp",
   heroMountains: "https://d2xsxph8kpxj0f.cloudfront.net/310419663031726902/dXSKZo4CTV8xN7g2WYCuTk/hero-mountains-mipJG3cmsAjkrKJVsv7hF6.webp",
+  mikePhoto: "/manus-storage/Screenshot_20260610_171111_Messenger_14faf9f5.jpg",
 };

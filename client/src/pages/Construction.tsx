@@ -1,10 +1,14 @@
 import { Link } from "wouter";
 import { Phone, Mail, Hammer, ArrowLeft } from "lucide-react";
 import { CONSTRUCTION_SERVICES, IMAGES, CONTACT_INFO } from "@shared/services";
+import { trpc } from "@/lib/trpc";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 
 export default function Construction() {
+  // Load admin-managed images (overrides defaults)
+  const { data: imageOverrides } = trpc.serviceImages.getAllPublic.useQuery();
+
   return (
     <div className="min-h-screen bg-gray-950">
       <SiteNav />
@@ -42,7 +46,7 @@ export default function Construction() {
               >
                 <div className="aspect-[4/3] relative overflow-hidden">
                   <img
-                    src={service.image}
+                    src={imageOverrides?.[service.id] || service.image}
                     alt={service.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />

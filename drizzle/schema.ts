@@ -43,3 +43,15 @@ export const contactSubmissions = mysqlTable("contact_submissions", {
 
 export type ContactSubmission = typeof contactSubmissions.$inferSelect;
 export type InsertContactSubmission = typeof contactSubmissions.$inferInsert;
+
+export const serviceImages = mysqlTable("service_images", {
+  id: int("id").autoincrement().primaryKey(),
+  serviceId: varchar("serviceId", { length: 100 }).notNull(),
+  imageUrl: varchar("imageUrl", { length: 1000 }).notNull(),
+  imageKey: varchar("imageKey", { length: 500 }),
+  isPrimary: int("isPrimary").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ServiceImage = typeof serviceImages.$inferSelect;
+export type InsertServiceImage = typeof serviceImages.$inferInsert;

@@ -1,6 +1,6 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, reviews, contactSubmissions, InsertReview, InsertContactSubmission } from "../drizzle/schema";
+import { InsertUser, users, reviews, contactSubmissions, serviceImages, InsertReview, InsertContactSubmission, InsertServiceImage } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -120,4 +120,39 @@ export async function createContactSubmission(data: InsertContactSubmission) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.insert(contactSubmissions).values(data);
+}
+
+// --- Service Images ---
+
+export async function getServiceImages(serviceId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(serviceImages).where(eq(serviceImages.serviceId, serviceId)).orderBy(desc(serviceImages.isPrimary), desc(serviceImages.createdAt));
+}
+
+export async function getAllServiceImages() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(serviceImages).orderBy(desc(serviceImages.createdAt));
+}
+
+export async function addServiceImage(data: InsertServiceImage) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(serviceImages).values(data);
+}
+
+export async function deleteServiceImage(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(serviceImages).where(eq(serviceImages.id, id));
+}
+
+export async function setPrimaryServiceImage(id: number, serviceId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Remove primary from all images of this service
+  await db.update(serviceImages).set({ isPrimary: 0 }).where(eq(serviceImages.serviceId, serviceId));
+  // Set new primary
+  await db.update(serviceImages).set({ isPrimary: 1 }).where(eq(serviceImages.id, id));
 }

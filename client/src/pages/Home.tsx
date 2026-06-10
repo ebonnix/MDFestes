@@ -23,10 +23,21 @@ export default function Home() {
 
         {/* Content */}
         <div className="relative z-10 container text-center py-20">
-          {/* CSS Text Logo - Large Gray MDF */}
-          <h1 className="font-heading text-[8rem] md:text-[12rem] lg:text-[16rem] font-black text-gray-400 leading-none tracking-tight mb-6">
-            MDF
-          </h1>
+          {/* Logo + Mike Photo */}
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10 mb-6">
+            {/* Mike's Photo */}
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-green-500/40 shadow-2xl shadow-green-500/10">
+              <img
+                src={IMAGES.mikePhoto}
+                alt="Mike Down Ferrante - Owner"
+                className="w-full h-full object-cover object-top"
+              />
+            </div>
+            {/* CSS Text Logo - Large Gray MDF */}
+            <h1 className="font-heading text-[8rem] md:text-[12rem] lg:text-[16rem] font-black text-gray-400 leading-none tracking-tight">
+              MDF
+            </h1>
+          </div>
 
           <p className="text-white/70 text-lg md:text-xl max-w-2xl mx-auto mb-4">
             Plowing, Excavation & Construction

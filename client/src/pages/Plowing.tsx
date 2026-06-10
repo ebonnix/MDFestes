@@ -1,10 +1,13 @@
 import { Link } from "wouter";
 import { Phone, Mail, Snowflake, ArrowLeft } from "lucide-react";
 import { PLOWING_SERVICES, IMAGES, CONTACT_INFO } from "@shared/services";
+import { trpc } from "@/lib/trpc";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 
 export default function Plowing() {
+  const { data: imageOverrides } = trpc.serviceImages.getAllPublic.useQuery();
+
   return (
     <div className="min-h-screen bg-gray-950">
       <SiteNav />
@@ -39,7 +42,7 @@ export default function Plowing() {
               <div key={service.id} className="group bg-gray-900 rounded-xl overflow-hidden border border-white/5 hover:border-green-500/30 transition-all duration-300">
                 <div className="aspect-[16/9] relative overflow-hidden">
                   <img
-                    src={service.image}
+                    src={imageOverrides?.[service.id] || service.image}
                     alt={service.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
