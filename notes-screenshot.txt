@@ -1,0 +1,6 @@
+Screenshot observations:
+- Mike's photo shows in a circular frame with green border next to the MDF logo - looks good
+- The photo shows the Messenger UI chrome (header bar) which should be cropped out
+- Need to use object-position to focus on Mike's face/body and hide the phone UI elements
+- The photo is showing the top of the screenshot including "Messenger" text
+- Fix: adjust object-position to center on Mike's body, not the top of the screenshot

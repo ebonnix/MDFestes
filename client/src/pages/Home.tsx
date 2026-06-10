@@ -30,7 +30,8 @@ export default function Home() {
               <img
                 src={IMAGES.mikePhoto}
                 alt="Mike Down Ferrante - Owner"
-                className="w-full h-full object-cover object-top"
+                className="w-full h-full object-cover"
+                style={{ objectPosition: "center 25%" }}
               />
             </div>
             {/* CSS Text Logo - Large Gray MDF */}

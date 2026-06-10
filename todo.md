@@ -32,7 +32,7 @@
 - [x] Wire form to send email notification to mdfplowing@gmail.com via owner notification system
 - [x] Replace Grading & Land Prep image with excavator/skid steer doing site grading
 - [x] Replace Driveway Maintenance image with gravel driveway being graded/replenished
-- [ ] Generate Mike in MDF t-shirt on job site for credibility section
+- [x] Generate Mike in MDF t-shirt on job site for credibility section (used original photo)
 - [x] Add Mike's photo next to MDF logo on homepage
 - [x] Update admin password to 9708895771
 - [x] Enhanced admin panel: review management (add/delete)
