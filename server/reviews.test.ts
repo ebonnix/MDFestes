@@ -83,14 +83,16 @@ describe("reviews router", () => {
   it("admin list works with correct password", async () => {
     const ctx = createPublicContext();
     const caller = appRouter.createCaller(ctx);
-    const result = await caller.reviews.adminList({ password: "mdf2024admin" });
+    const adminPw = process.env.ADMIN_PASSWORD || "mdf2024admin";
+    const result = await caller.reviews.adminList({ password: adminPw });
     expect(result).toHaveLength(2);
   });
 
   it("admin can delete a review with correct password", async () => {
     const ctx = createPublicContext();
     const caller = appRouter.createCaller(ctx);
-    const result = await caller.reviews.delete({ id: 1, password: "mdf2024admin" });
+    const adminPw = process.env.ADMIN_PASSWORD || "mdf2024admin";
+    const result = await caller.reviews.delete({ id: 1, password: adminPw });
     expect(result).toEqual({ success: true });
   });
 
