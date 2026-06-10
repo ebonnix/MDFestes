@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Phone, Mail, MapPin, Snowflake, Hammer, ChevronRight, MessageSquare } from "lucide-react";
+import { Phone, Mail, MapPin, Snowflake, Hammer, ChevronRight, MessageSquare, Truck, Clock, Users, Mountain } from "lucide-react";
 import { IMAGES, CONTACT_INFO } from "@shared/services";
 
 export default function Home() {
@@ -9,7 +9,7 @@ export default function Home() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-b border-white/10">
         <div className="container flex items-center justify-between h-16">
           <Link href="/">
-            <img src={IMAGES.logo} alt="MDF Logo" className="h-10 w-auto" />
+            <span className="font-heading text-3xl font-black text-gray-400 tracking-tight">MDF</span>
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-white/80">
             <Link href="/plowing" className="hover:text-white transition-colors">Plowing & Excavation</Link>
@@ -38,14 +38,16 @@ export default function Home() {
 
         {/* Content */}
         <div className="relative z-10 container text-center py-20">
-          <img
-            src={IMAGES.logo}
-            alt="MDF"
-            className="h-24 md:h-32 lg:h-40 w-auto mx-auto mb-8"
-          />
+          {/* CSS Text Logo - Large Gray MDF */}
+          <h1 className="font-heading text-[8rem] md:text-[12rem] lg:text-[16rem] font-black text-gray-400 leading-none tracking-tight mb-6">
+            MDF
+          </h1>
 
-          <p className="text-white/60 text-base md:text-lg max-w-2xl mx-auto mb-12">
-            Professional plowing, excavation, and construction services proudly serving Estes Park and the surrounding Colorado mountain communities.
+          <p className="text-white/70 text-lg md:text-xl max-w-2xl mx-auto mb-4">
+            Plowing, Excavation & Construction
+          </p>
+          <p className="text-white/50 text-base max-w-2xl mx-auto mb-12">
+            Proudly serving Estes Park and the surrounding Colorado mountain communities.
           </p>
 
           {/* Two Split-Path Cards */}
@@ -101,6 +103,56 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Credibility Section */}
+      <section className="relative bg-gradient-to-b from-black to-gray-900 border-t border-white/10 py-16">
+        <div className="container">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+            {/* 20 Years */}
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center mx-auto mb-4">
+                <Clock className="w-8 h-8 text-green-400" />
+              </div>
+              <h3 className="font-heading text-3xl font-bold text-white mb-2">20+ Years</h3>
+              <p className="text-white/60 text-sm">Trusted by the Estes Valley for over two decades</p>
+            </div>
+
+            {/* Clients */}
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-green-400" />
+              </div>
+              <h3 className="font-heading text-3xl font-bold text-white mb-2">Trusted Partners</h3>
+              <p className="text-white/60 text-sm">HOAs, private owners, ranches, private roads, and county roads</p>
+            </div>
+
+            {/* Fleet */}
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center mx-auto mb-4">
+                <Truck className="w-8 h-8 text-green-400" />
+              </div>
+              <h3 className="font-heading text-3xl font-bold text-white mb-2">30+ Vehicles</h3>
+              <p className="text-white/60 text-sm">One of the largest fleets in the Estes Park area</p>
+            </div>
+
+            {/* Service Area */}
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center mx-auto mb-4">
+                <Mountain className="w-8 h-8 text-green-400" />
+              </div>
+              <h3 className="font-heading text-3xl font-bold text-white mb-2">Remote Access</h3>
+              <p className="text-white/60 text-sm">Serving Allenspark, Little Valley, Storm Mountain, and hard-to-reach areas</p>
+            </div>
+          </div>
+
+          {/* Credibility Statement */}
+          <div className="mt-12 text-center max-w-3xl mx-auto">
+            <p className="text-white/70 text-lg leading-relaxed">
+              For over 20 years, MDF has been the name the Estes Valley trusts for plowing, excavation, and construction. We go where others won't — from Allenspark to Little Valley, Storm Mountain, and every hard-to-get-to spot in between. With a fleet of 30+ vehicles and a reputation built on reliability, we're ready when you need us.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Chatbot Teaser */}
       <section className="relative bg-gradient-to-r from-green-900/30 to-black border-t border-green-500/20">
         <div className="container py-8 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -124,8 +176,8 @@ export default function Home() {
         <div className="container">
           <div className="grid md:grid-cols-3 gap-8">
             <div>
-              <img src={IMAGES.logo} alt="MDF" className="h-12 w-auto mb-4" />
-              <p className="text-white/50 text-sm">Proudly serving Estes Park, Colorado</p>
+              <span className="font-heading text-4xl font-black text-gray-400 tracking-tight">MDF</span>
+              <p className="text-white/50 text-sm mt-4">Proudly serving Estes Park, Colorado and surrounding mountain communities for over 20 years.</p>
             </div>
             <div>
               <h4 className="text-white font-semibold mb-3">Services</h4>

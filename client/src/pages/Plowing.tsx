@@ -9,7 +9,7 @@ export default function Plowing() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-b border-white/10">
         <div className="container flex items-center justify-between h-16">
           <Link href="/">
-            <img src={IMAGES.logo} alt="MDF Logo" className="h-10 w-auto" />
+            <span className="font-heading text-3xl font-black text-gray-400 tracking-tight">MDF</span>
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-white/80">
             <Link href="/plowing" className="text-green-400">Plowing & Excavation</Link>
@@ -88,7 +88,7 @@ export default function Plowing() {
       <footer className="bg-black border-t border-white/10 py-8">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <img src={IMAGES.logo} alt="MDF" className="h-8 w-auto" />
+            <span className="font-heading text-2xl font-black text-gray-400 tracking-tight">MDF</span>
             <span className="text-white/40 text-sm">&copy; {new Date().getFullYear()} MDF. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-4 text-white/50 text-sm">

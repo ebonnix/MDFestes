@@ -120,7 +120,7 @@ export default function Admin() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-b border-white/10">
         <div className="container flex items-center justify-between h-16">
           <Link href="/">
-            <img src={IMAGES.logo} alt="MDF Logo" className="h-10 w-auto" />
+            <span className="font-heading text-3xl font-black text-gray-400 tracking-tight">MDF</span>
           </Link>
           <div className="flex items-center gap-4">
             <span className="text-green-400 text-sm font-medium">Admin Panel</span>

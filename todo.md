@@ -20,3 +20,10 @@
 - [x] Vitest tests for reviews and contact routers (11 tests passing)
 - [x] Deploy live
 - [x] Push code to GitHub repo 'mdfestes' under 'ebonnix'
+- [x] Regenerate logo without 'Motivated Diligent Fixers' text
+- [x] Replace duplicate service images: Stamped Concrete, Drywall, Flooring, Trim need unique photos
+- [x] Broom & Slick Trowel: split into two services with unique images
+- [x] Framing needs its own unique image (currently shared with Drywall)
+- [x] Add prominent credibility/trust section: 20 years, HOAs/private owners/ranches/roads, 30+ fleet vehicles
+- [x] Update logo to large gray MDF letters only (no tagline, no multi-color)
+- [x] Add service area info: Allenspark, Little Valley, Storm Mountain, hard-to-get-to spots
