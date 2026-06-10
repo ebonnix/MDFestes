@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { Phone, Trash2, Star, Lock, ArrowLeft, Plus } from "lucide-react";
+import { Trash2, Star, Lock, ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { IMAGES, CONTACT_INFO } from "@shared/services";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -116,8 +115,8 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-b border-white/10">
+      {/* Admin top bar */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-b border-white/10">
         <div className="container flex items-center justify-between h-16">
           <Link href="/">
             <span className="font-heading text-3xl font-black text-gray-400 tracking-tight">MDF</span>
@@ -134,7 +133,7 @@ export default function Admin() {
             </Button>
           </div>
         </div>
-      </nav>
+      </div>
 
       <div className="pt-24 pb-16">
         <div className="container max-w-4xl">

@@ -15,6 +15,13 @@
       "when": 1781123538745,
       "tag": "0001_fixed_otto_octavius",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1781130962072,
+      "tag": "0002_tiny_patriot",
+      "breakpoints": true
     }
   ]
 }

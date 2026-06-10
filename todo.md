@@ -27,3 +27,6 @@
 - [x] Add prominent credibility/trust section: 20 years, HOAs/private owners/ranches/roads, 30+ fleet vehicles
 - [x] Update logo to large gray MDF letters only (no tagline, no multi-color)
 - [x] Add service area info: Allenspark, Little Valley, Storm Mountain, hard-to-get-to spots
+- [x] Add responsive mobile hamburger menu to all pages
+- [x] Build bid/contact form with fields: name, phone, email, service type, description, photo upload
+- [x] Wire form to send email notification to mdfplowing@gmail.com via owner notification system

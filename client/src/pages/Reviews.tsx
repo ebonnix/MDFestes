@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Phone, Mail, Star, Send, ArrowLeft } from "lucide-react";
+import { Star, Send, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { IMAGES, CONTACT_INFO } from "@shared/services";
+import { CONTACT_INFO } from "@shared/services";
+import SiteNav from "@/components/SiteNav";
+import SiteFooter from "@/components/SiteFooter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -45,24 +47,7 @@ export default function Reviews() {
 
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-b border-white/10">
-        <div className="container flex items-center justify-between h-16">
-          <Link href="/">
-            <span className="font-heading text-3xl font-black text-gray-400 tracking-tight">MDF</span>
-          </Link>
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-white/80">
-            <Link href="/plowing" className="hover:text-white transition-colors">Plowing & Excavation</Link>
-            <Link href="/construction" className="hover:text-white transition-colors">Construction</Link>
-            <Link href="/reviews" className="text-green-400">Reviews</Link>
-            <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
-          </div>
-          <a href={`tel:${CONTACT_INFO.phone}`} className="flex items-center gap-2 text-sm font-semibold text-green-400">
-            <Phone className="w-4 h-4" />
-            <span className="hidden sm:inline">{CONTACT_INFO.phone}</span>
-          </a>
-        </div>
-      </nav>
+      <SiteNav />
 
       {/* Header */}
       <section className="pt-24 pb-12">
@@ -196,23 +181,7 @@ export default function Reviews() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-black border-t border-white/10 py-8">
-        <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="font-heading text-2xl font-black text-gray-400 tracking-tight">MDF</span>
-            <span className="text-white/40 text-sm">&copy; {new Date().getFullYear()} MDF. All rights reserved.</span>
-          </div>
-          <div className="flex items-center gap-4 text-white/50 text-sm">
-            <a href={`tel:${CONTACT_INFO.phone}`} className="hover:text-white transition-colors flex items-center gap-1">
-              <Phone className="w-3 h-3" /> {CONTACT_INFO.phone}
-            </a>
-            <a href={`mailto:${CONTACT_INFO.email}`} className="hover:text-white transition-colors flex items-center gap-1">
-              <Mail className="w-3 h-3" /> {CONTACT_INFO.email}
-            </a>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

@@ -123,6 +123,21 @@ describe("contact router", () => {
     expect(result).toEqual({ success: true });
   });
 
+  it("submits a bid form with address and photo", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.contact.submit({
+      name: "Alice",
+      email: "alice@example.com",
+      message: "Need a deck built on my mountain property.",
+      service: "Decks",
+      address: "456 Rocky Rd, Estes Park, CO",
+      photoUrl: "/manus-storage/bid-photos/test.jpg",
+      photoKey: "bid-photos/test.jpg",
+    });
+    expect(result).toEqual({ success: true });
+  });
+
   it("rejects contact form with invalid email", async () => {
     const ctx = createPublicContext();
     const caller = appRouter.createCaller(ctx);

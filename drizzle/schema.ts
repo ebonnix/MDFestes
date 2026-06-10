@@ -35,6 +35,9 @@ export const contactSubmissions = mysqlTable("contact_submissions", {
   phone: varchar("phone", { length: 30 }),
   message: text("message").notNull(),
   service: varchar("service", { length: 255 }),
+  address: varchar("address", { length: 500 }),
+  photoUrl: varchar("photoUrl", { length: 1000 }),
+  photoKey: varchar("photoKey", { length: 500 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
