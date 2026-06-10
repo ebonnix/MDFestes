@@ -40,16 +40,10 @@ export default function Home() {
         <div className="relative z-10 container text-center py-20">
           <img
             src={IMAGES.logo}
-            alt="MDF - Motivated Diligent Fixers"
+            alt="MDF"
             className="h-24 md:h-32 lg:h-40 w-auto mx-auto mb-8"
           />
-          <div className="flex items-center justify-center gap-3 md:gap-6 mb-4">
-            <span className="text-white font-heading text-lg md:text-2xl lg:text-3xl font-bold tracking-wider">MOTIVATED</span>
-            <span className="text-green-500 text-2xl md:text-3xl">&bull;</span>
-            <span className="text-green-400 font-heading text-lg md:text-2xl lg:text-3xl font-bold tracking-wider">DILIGENT</span>
-            <span className="text-green-500 text-2xl md:text-3xl">&bull;</span>
-            <span className="text-gray-300 font-heading text-lg md:text-2xl lg:text-3xl font-bold tracking-wider">FIXERS</span>
-          </div>
+
           <p className="text-white/60 text-base md:text-lg max-w-2xl mx-auto mb-12">
             Professional plowing, excavation, and construction services proudly serving Estes Park and the surrounding Colorado mountain communities.
           </p>
@@ -131,8 +125,7 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-8">
             <div>
               <img src={IMAGES.logo} alt="MDF" className="h-12 w-auto mb-4" />
-              <p className="text-white/50 text-sm">Motivated. Diligent. Fixers.</p>
-              <p className="text-white/50 text-sm mt-1">Proudly serving Estes Park, Colorado</p>
+              <p className="text-white/50 text-sm">Proudly serving Estes Park, Colorado</p>
             </div>
             <div>
               <h4 className="text-white font-semibold mb-3">Services</h4>
