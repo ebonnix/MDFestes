@@ -1,0 +1,22 @@
+# Project TODO
+
+- [x] Design system: colors (black, white, dark green, grey), fonts, global styles
+- [x] MDF logo generation (black, white, dark green, grey)
+- [x] Splash/homepage with two split-path cards (plow truck → Plowing, hammer → Construction)
+- [x] Hero section with MDF logo and "Motivated, Diligent, Fixers" keywords
+- [x] Plowing & Excavation services section with mountain/Colorado imagery
+- [x] Construction services section with 20 individual service pages/sections
+- [x] Service images: free Estes Park / mountain-setting photos for each service
+- [x] Google-style 5-star reviews section with pre-populated realistic reviews
+- [x] Visitor review submission form
+- [x] Password-protected admin panel for managing reviews (add/delete)
+- [x] Contact page with phone (970-889-5771) and email (mdfplowing@gmail.com)
+- [x] Contact inquiry form with owner notification
+- [x] Responsive mobile-first design
+- [x] Chatbot placeholder/teaser: "Share a photo and get a bid (40–60% range)"
+- [x] SEO metadata and structured LocalBusiness schema markup
+- [x] sitemap.xml and robots.txt
+- [x] Database schema for reviews
+- [x] Vitest tests for reviews and contact routers (11 tests passing)
+- [ ] Deploy live
+- [ ] Push code to GitHub repo 'mdfestes' under 'ebonnix'

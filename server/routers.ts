@@ -1,28 +1,122 @@
+import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
+import { getPublicReviews, getAllReviews, createReview, deleteReview, createContactSubmission } from "./db";
+import { notifyOwner } from "./_core/notification";
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "mdf2024admin";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
+      return { success: true } as const;
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  reviews: router({
+    list: publicProcedure.query(async () => {
+      return getPublicReviews();
+    }),
+
+    submit: publicProcedure
+      .input(z.object({
+        name: z.string().min(1).max(255),
+        rating: z.number().int().min(1).max(5),
+        text: z.string().min(1).max(2000),
+        service: z.string().max(255).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await createReview({
+          name: input.name,
+          rating: input.rating,
+          text: input.text,
+          service: input.service || null,
+          isPrePopulated: 0,
+        });
+        // Notify owner of new review
+        await notifyOwner({
+          title: "New Review Submitted",
+          content: `${input.name} left a ${input.rating}-star review: "${input.text.substring(0, 100)}..."`,
+        });
+        return { success: true };
+      }),
+
+    adminList: publicProcedure
+      .input(z.object({ password: z.string() }))
+      .query(async ({ input }) => {
+        if (input.password !== ADMIN_PASSWORD) {
+          throw new Error("Invalid admin password");
+        }
+        return getAllReviews();
+      }),
+
+    adminAdd: publicProcedure
+      .input(z.object({
+        password: z.string(),
+        name: z.string().min(1).max(255),
+        rating: z.number().int().min(1).max(5),
+        text: z.string().min(1).max(2000),
+        service: z.string().max(255).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        if (input.password !== ADMIN_PASSWORD) {
+          throw new Error("Invalid admin password");
+        }
+        await createReview({
+          name: input.name,
+          rating: input.rating,
+          text: input.text,
+          service: input.service || null,
+          isPrePopulated: 0,
+        });
+        return { success: true };
+      }),
+
+    delete: publicProcedure
+      .input(z.object({
+        id: z.number(),
+        password: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        if (input.password !== ADMIN_PASSWORD) {
+          throw new Error("Invalid admin password");
+        }
+        await deleteReview(input.id);
+        return { success: true };
+      }),
+  }),
+
+  contact: router({
+    submit: publicProcedure
+      .input(z.object({
+        name: z.string().min(1).max(255),
+        email: z.string().email().max(320),
+        phone: z.string().max(30).optional(),
+        message: z.string().min(1).max(5000),
+        service: z.string().max(255).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await createContactSubmission({
+          name: input.name,
+          email: input.email,
+          phone: input.phone || null,
+          message: input.message,
+          service: input.service || null,
+        });
+        // Notify owner
+        await notifyOwner({
+          title: "New Contact Form Submission",
+          content: `From: ${input.name} (${input.email})\nPhone: ${input.phone || "N/A"}\nService: ${input.service || "N/A"}\n\nMessage: ${input.message.substring(0, 200)}`,
+        });
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
