@@ -18,5 +18,5 @@
 - [x] sitemap.xml and robots.txt
 - [x] Database schema for reviews
 - [x] Vitest tests for reviews and contact routers (11 tests passing)
-- [ ] Deploy live
-- [ ] Push code to GitHub repo 'mdfestes' under 'ebonnix'
+- [x] Deploy live
+- [x] Push code to GitHub repo 'mdfestes' under 'ebonnix'
