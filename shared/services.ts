@@ -189,7 +189,7 @@ export const PLOWING_SERVICES: ServiceItem[] = [
 
 export const CONTACT_INFO = {
   phone: "970-889-5771",
-  email: "mdfplowing@gmail.com",
+  email: "mdfestes@gmail.com",
   location: "Estes Park, Colorado",
 };
 
