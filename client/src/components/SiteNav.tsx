@@ -116,6 +116,13 @@ export default function SiteNav() {
               <Phone className="w-4 h-4" />
               {CONTACT_INFO.phone}
             </a>
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="py-3 px-4 rounded-lg text-xs font-medium text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
+            >
+              Admin
+            </Link>
           </div>
         </div>
       )}
