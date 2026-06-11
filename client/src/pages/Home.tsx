@@ -28,7 +28,7 @@ export default function Home() {
             MDF
           </h1>
 
-          <p className="text-white/70 text-lg md:text-xl max-w-2xl mx-auto mb-4">
+          <p className="text-white/70 text-3xl md:text-4xl lg:text-5xl font-heading font-bold max-w-2xl mx-auto mb-4">
             Plowing, Excavation & Construction
           </p>
           <p className="text-white/50 text-base max-w-2xl mx-auto mb-12">
@@ -51,7 +51,7 @@ export default function Home() {
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   <div className="flex items-center gap-3 mb-2">
                     <Snowflake className="w-6 h-6 text-green-400" />
-                    <h3 className="font-heading text-xl md:text-2xl font-bold text-white">Plowing & Excavation</h3>
+                    <h3 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-white">Plowing & Excavation</h3>
                   </div>
                   <p className="text-white/70 text-sm mb-3">Snow removal, excavation, grading, and land preparation</p>
                   <span className="inline-flex items-center gap-1 text-green-400 text-sm font-semibold group-hover:gap-2 transition-all">
@@ -75,7 +75,7 @@ export default function Home() {
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   <div className="flex items-center gap-3 mb-2">
                     <Hammer className="w-6 h-6 text-green-400" />
-                    <h3 className="font-heading text-xl md:text-2xl font-bold text-white">Construction</h3>
+                    <h3 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-white">Construction</h3>
                   </div>
                   <p className="text-white/70 text-sm mb-3">Full-service construction, remodeling, and concrete work</p>
                   <span className="inline-flex items-center gap-1 text-green-400 text-sm font-semibold group-hover:gap-2 transition-all">

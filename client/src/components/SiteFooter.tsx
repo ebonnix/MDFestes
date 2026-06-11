@@ -37,8 +37,17 @@ export default function SiteFooter() {
             </div>
           </div>
         </div>
-        <div className="border-t border-white/10 mt-8 pt-8 text-center text-white/40 text-xs">
-          &copy; {new Date().getFullYear()} MDF — Plowing, Excavation & Construction. All rights reserved.
+        <div className="border-t border-white/10 mt-8 pt-8 flex flex-col items-center gap-4 text-white/40 text-xs">
+          <p>&copy; {new Date().getFullYear()} MDF — Plowing, Excavation & Construction. All rights reserved.</p>
+          <a
+            href="https://estesautomating.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-white/30 hover:text-white/60 transition-colors text-xs"
+          >
+            <span>Built by</span>
+            <img src="/manus-storage/estes-automating-logo_bb080aa4.jpg" alt="Estes Automating" className="h-6 inline-block" />
+          </a>
         </div>
       </div>
     </footer>
