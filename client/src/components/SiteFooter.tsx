@@ -44,9 +44,10 @@ export default function SiteFooter() {
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-white/30 hover:text-white/60 transition-colors text-xs"
+            onClick={(e) => { e.stopPropagation(); window.open('https://estesautomating.com', '_blank', 'noopener,noreferrer'); e.preventDefault(); }}
           >
             <span>Built by</span>
-            <img src="/manus-storage/estes-automating-logo_bb080aa4.jpg" alt="Estes Automating" className="h-6 inline-block" />
+            <img src="/manus-storage/estes-automating-logo_6b4bed49.jpg" alt="Estes Automating" className="h-6 inline-block" />
           </a>
         </div>
       </div>
