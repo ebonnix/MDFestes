@@ -4,15 +4,35 @@ import { Phone, Menu, X } from "lucide-react";
 import { CONTACT_INFO } from "@shared/services";
 
 const navLinks = [
-  { href: "/plowing", label: "Plowing & Excavation" },
-  { href: "/construction", label: "Construction" },
-  { href: "/reviews", label: "Reviews" },
-  { href: "/contact", label: "Contact" },
+  { href: "#plowing", label: "Plowing & Excavation" },
+  { href: "#construction", label: "Construction" },
+  { href: "#reviews", label: "Reviews" },
+  { href: "#contact", label: "Contact" },
 ];
+
+function scrollTo(hash: string) {
+  const el = document.querySelector(hash);
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth" });
+  }
+}
 
 export default function SiteNav() {
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // If we're on the home page, smooth scroll
+    if (location === "/" || location === "") {
+      e.preventDefault();
+      scrollTo(href);
+      setOpen(false);
+    } else {
+      // Navigate to home page with hash
+      e.preventDefault();
+      window.location.href = "/" + href;
+    }
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-b border-white/10">
@@ -25,34 +45,37 @@ export default function SiteNav() {
         {/* Desktop nav links */}
         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-white/80">
           {navLinks.map((link) => (
-            <Link
+            <a
               key={link.href}
               href={link.href}
-              className={`hover:text-white transition-colors ${location === link.href ? "text-green-400" : ""}`}
+              onClick={(e) => handleNavClick(e, link.href)}
+              className="hover:text-white transition-colors cursor-pointer"
             >
               {link.label}
-            </Link>
+            </a>
           ))}
         </div>
 
         {/* Mobile: centered Get Bid Now */}
         <div className="md:hidden flex-1 flex justify-center">
-          <Link
-            href="/contact"
+          <a
+            href="#contact"
+            onClick={(e) => handleNavClick(e, "#contact")}
             className="px-5 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-bold rounded-lg transition-colors shadow-lg shadow-green-600/20"
           >
             Get Bid Now
-          </Link>
+          </a>
         </div>
 
         {/* Desktop: Get Bid Now + Phone */}
         <div className="hidden md:flex items-center gap-3">
-          <Link
-            href="/contact"
+          <a
+            href="#contact"
+            onClick={(e) => handleNavClick(e, "#contact")}
             className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-bold rounded-lg transition-colors shadow-lg shadow-green-600/20"
           >
             Get Bid Now
-          </Link>
+          </a>
           <a
             href={`tel:${CONTACT_INFO.phone}`}
             className="flex items-center gap-2 text-sm font-semibold text-green-400 hover:text-green-300 transition-colors"
@@ -77,18 +100,14 @@ export default function SiteNav() {
         <div className="md:hidden bg-black/95 border-t border-white/10 px-4 pb-4">
           <div className="flex flex-col gap-1 pt-2">
             {navLinks.map((link) => (
-              <Link
+              <a
                 key={link.href}
                 href={link.href}
-                onClick={() => setOpen(false)}
-                className={`py-3 px-4 rounded-lg text-sm font-medium transition-colors ${
-                  location === link.href
-                    ? "bg-green-500/10 text-green-400"
-                    : "text-white/70 hover:text-white hover:bg-white/5"
-                }`}
+                onClick={(e) => handleNavClick(e, link.href)}
+                className="py-3 px-4 rounded-lg text-sm font-medium transition-colors text-white/70 hover:text-white hover:bg-white/5"
               >
                 {link.label}
-              </Link>
+              </a>
             ))}
             <a
               href={`tel:${CONTACT_INFO.phone}`}

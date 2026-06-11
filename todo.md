@@ -38,3 +38,5 @@
 - [x] Enhanced admin panel: review management (add/delete)
 - [x] Enhanced admin panel: service image management (delete/add photos per service)
 - [x] Enhanced admin panel: Instagram posting UI (placeholder/future feature for @mdfplowing)
+- [x] Convert site to single-page scrolling layout with all sections on homepage
+- [x] Nav links become smooth scroll anchors instead of page navigation
