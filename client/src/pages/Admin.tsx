@@ -266,8 +266,8 @@ function ImagesTab({ password }: { password: string }) {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("File too large. Max 10MB.");
+    if (file.size > 16 * 1024 * 1024) {
+      toast.error("File too large. Max 16MB.");
       return;
     }
     setUploading(true);
@@ -289,9 +289,14 @@ function ImagesTab({ password }: { password: string }) {
 
   const currentService = ALL_SERVICES.find(s => s.id === selectedService);
 
+  // Build unified gallery: uploaded images first (with primary badge), then default as fallback
+  const uploadedImages = images ?? [];
+  const hasPrimary = uploadedImages.some(img => img.isPrimary === 1);
+
   return (
     <div>
-      <h2 className="font-heading text-2xl font-bold text-white mb-6">Manage Service Images</h2>
+      <h2 className="font-heading text-2xl font-bold text-white mb-2">Manage Service Images</h2>
+      <p className="text-white/50 text-sm mb-6">Upload multiple photos per service. Mark one as the primary image shown on the site.</p>
 
       {/* Service Selector */}
       <div className="mb-6">
@@ -314,16 +319,8 @@ function ImagesTab({ password }: { password: string }) {
         </select>
       </div>
 
-      {/* Current default image */}
-      {currentService && (
-        <div className="mb-6 bg-gray-900 rounded-xl p-4 border border-white/10">
-          <p className="text-white/60 text-sm mb-2">Current default image for <span className="text-green-400 font-medium">{currentService.name}</span>:</p>
-          <img src={currentService.image} alt={currentService.name} className="w-full max-w-md h-48 object-cover rounded-lg" />
-        </div>
-      )}
-
       {/* Upload Button */}
-      <div className="mb-6">
+      <div className="mb-8">
         <input
           ref={fileInputRef}
           type="file"
@@ -339,29 +336,42 @@ function ImagesTab({ password }: { password: string }) {
           <Upload className="w-4 h-4 mr-2" />
           {uploading ? "Uploading..." : "Upload New Image"}
         </Button>
+        <p className="text-white/30 text-xs mt-2">Max 16MB per image. Upload as many as you like.</p>
       </div>
 
-      {/* Uploaded Images Grid */}
-      {images && images.length > 0 && (
+      {/* Unified Image Gallery */}
+      {currentService && (
         <div>
-          <h3 className="text-white font-semibold mb-4">Uploaded Images ({images.length})</h3>
+          <h3 className="text-white font-semibold mb-4">
+            {uploadedImages.length > 0
+              ? `Images for ${currentService.name} (${uploadedImages.length} uploaded + 1 default)`
+              : `Images for ${currentService.name}`}
+          </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {images.map((img) => (
-              <div key={img.id} className="relative group bg-gray-900 rounded-lg overflow-hidden border border-white/10">
-                <img src={img.imageUrl} alt="" className="w-full h-40 object-cover" />
+            {/* Uploaded images */}
+            {uploadedImages.map((img) => (
+              <div key={img.id} className="relative group bg-gray-900 rounded-lg overflow-hidden border-2 transition-all"
+                style={{ borderColor: img.isPrimary === 1 ? 'rgb(22 163 74)' : 'rgba(255,255,255,0.1)' }}
+              >
+                <img src={img.imageUrl} alt="" className="w-full h-44 object-cover" />
                 {img.isPrimary === 1 && (
-                  <div className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                  <div className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
                     <CheckCircle className="w-3 h-3" /> Primary
                   </div>
                 )}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                {img.isPrimary !== 1 && (
+                  <div className="absolute top-2 left-2 bg-black/60 text-white/60 text-xs px-2 py-1 rounded-full">
+                    Uploaded
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
                   {img.isPrimary !== 1 && (
                     <Button
                       size="sm"
                       onClick={() => setPrimary.mutate({ password, id: img.id, serviceId: selectedService })}
-                      className="bg-green-600 hover:bg-green-700 text-white text-xs"
+                      className="bg-green-600 hover:bg-green-700 text-white text-xs w-full"
                     >
-                      Set Primary
+                      <CheckCircle className="w-3 h-3 mr-1" /> Set as Primary
                     </Button>
                   )}
                   <Button
@@ -372,19 +382,32 @@ function ImagesTab({ password }: { password: string }) {
                         deleteImage.mutate({ password, id: img.id });
                       }
                     }}
-                    className="text-red-400 border-red-400/30 hover:bg-red-500/10 text-xs"
+                    className="text-red-400 border-red-400/30 hover:bg-red-500/10 text-xs w-full"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className="w-3 h-3 mr-1" /> Delete
                   </Button>
                 </div>
               </div>
             ))}
+
+            {/* Default/fallback image — always shown at end */}
+            <div className="relative bg-gray-900 rounded-lg overflow-hidden border-2 border-dashed"
+              style={{ borderColor: !hasPrimary ? 'rgb(22 163 74)' : 'rgba(255,255,255,0.1)' }}
+            >
+              <img src={currentService.image} alt={currentService.name} className="w-full h-44 object-cover opacity-70" />
+              <div className="absolute top-2 left-2 bg-gray-700 text-white/70 text-xs px-2 py-1 rounded-full">
+                {!hasPrimary ? '✓ Default (active)' : 'Default'}
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white/50 text-xs text-center py-1">
+                Built-in default — upload to replace
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {images && images.length === 0 && (
-        <p className="text-white/40 text-center py-8">No custom images uploaded for this service yet. The default image is shown above.</p>
+      {images !== undefined && images.length === 0 && (
+        <p className="text-white/40 text-center py-4 text-sm">No custom images uploaded yet — the default image is active. Upload photos above to add your own.</p>
       )}
     </div>
   );

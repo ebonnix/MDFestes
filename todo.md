@@ -40,3 +40,6 @@
 - [x] Enhanced admin panel: Instagram posting UI (placeholder/future feature for @mdfplowing)
 - [x] Convert site to single-page scrolling layout with all sections on homepage
 - [x] Nav links become smooth scroll anchors instead of page navigation
+- [ ] Admin service images: support multiple images per category
+- [ ] Admin service images: thumbnail gallery below main image
+- [ ] Admin service images: choose which image is primary per category
