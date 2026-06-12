@@ -38,7 +38,10 @@ export default function SiteFooter() {
           </div>
         </div>
         <div className="border-t border-white/10 mt-8 pt-8 flex flex-col items-center gap-4 text-white/40 text-xs">
-          <p>&copy; {new Date().getFullYear()} MDF — Plowing, Excavation & Construction. All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <p>&copy; {new Date().getFullYear()} MDF — Plowing, Excavation & Construction. All rights reserved.</p>
+            <Link href="/admin" className="text-white/20 hover:text-white/50 transition-colors text-xs">Admin</Link>
+          </div>
           <a
             href="https://estesautomating.com"
             target="_blank"
