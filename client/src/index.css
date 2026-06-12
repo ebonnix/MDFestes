@@ -165,3 +165,18 @@
     }
   }
 }
+
+/* Hide Manus platform badge/watermark */
+manus-content-root,
+footer-watermark,
+footer-watermark-container {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  clip: rect(0, 0, 0, 0) !important;
+}
