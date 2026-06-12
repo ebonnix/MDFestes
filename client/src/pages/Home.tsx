@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { ChevronRight, MessageSquare, Truck, Clock, Users, Mountain, Snowflake, Hammer, Star, Send, Phone, Mail, MapPin, Camera, X, Upload } from "lucide-react";
+import { ChevronRight, MessageSquare, Truck, Clock, Users, Mountain, Snowflake, Hammer, Star, Send, Phone, Mail, MapPin, Camera, X, Upload, Instagram, Facebook } from "lucide-react";
 import { IMAGES, CONTACT_INFO, PLOWING_SERVICES, CONSTRUCTION_SERVICES, ServiceItem } from "@shared/services";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -445,6 +445,31 @@ export default function Home() {
                       <p className="text-white/50 text-sm">Location</p>
                       <p className="text-white font-semibold">{CONTACT_INFO.location}</p>
                       <p className="text-white/50 text-xs mt-1">Serving Allenspark, Little Valley, Storm Mountain & beyond</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Social Media Coming Soon */}
+              <div className="bg-gray-900 rounded-xl p-6 border border-white/5">
+                <h4 className="text-white/70 text-sm font-medium mb-4 uppercase tracking-wider">Follow Us</h4>
+                <div className="flex gap-3">
+                  <div className="flex-1 flex items-center gap-3 bg-gray-800/60 rounded-lg px-4 py-3 border border-white/5">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center shrink-0">
+                      <Instagram className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-white/80 text-sm font-medium">Instagram</p>
+                      <span className="text-xs text-green-400">Coming Soon</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 flex items-center gap-3 bg-gray-800/60 rounded-lg px-4 py-3 border border-white/5">
+                    <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center shrink-0">
+                      <Facebook className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-white/80 text-sm font-medium">Facebook</p>
+                      <span className="text-xs text-green-400">Coming Soon</span>
                     </div>
                   </div>
                 </div>
