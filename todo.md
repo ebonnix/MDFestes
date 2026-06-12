@@ -43,3 +43,11 @@
 - [x] Admin service images: support multiple images per category
 - [x] Admin service images: thumbnail gallery below main image (unified gallery with default + uploaded)
 - [x] Admin service images: choose which image is primary per category
+- [x] Admin: add new service category (name, type: construction/plowing, image)
+- [x] Admin: rename/modify existing service category
+- [x] Admin: delete service category
+- [x] Public site renders categories from database (with fallback to built-in defaults)
+- [x] Seed built-in categories into service_categories DB table on first load
+- [x] Public site uses DB as primary source for categories (built-ins seeded, custom added)
+- [x] Admin can rename/delete built-in categories once they are in DB
+- [x] Cascade delete service_images when a category is removed

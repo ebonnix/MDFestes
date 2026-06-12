@@ -29,6 +29,13 @@
       "when": 1781133403380,
       "tag": "0003_flowery_vapor",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1781226309160,
+      "tag": "0004_giant_vermin",
+      "breakpoints": true
     }
   ]
 }

@@ -55,3 +55,17 @@ export const serviceImages = mysqlTable("service_images", {
 
 export type ServiceImage = typeof serviceImages.$inferSelect;
 export type InsertServiceImage = typeof serviceImages.$inferInsert;
+
+export const serviceCategories = mysqlTable("service_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  serviceId: varchar("serviceId", { length: 100 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  image: varchar("image", { length: 1000 }),
+  category: mysqlEnum("category", ["construction", "plowing"]).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ServiceCategory = typeof serviceCategories.$inferSelect;
+export type InsertServiceCategory = typeof serviceCategories.$inferInsert;

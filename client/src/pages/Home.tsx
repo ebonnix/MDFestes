@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { ChevronRight, MessageSquare, Truck, Clock, Users, Mountain, Snowflake, Hammer, Star, Send, Phone, Mail, MapPin, Camera, X, Upload } from "lucide-react";
-import { IMAGES, CONTACT_INFO, PLOWING_SERVICES, CONSTRUCTION_SERVICES } from "@shared/services";
+import { IMAGES, CONTACT_INFO, PLOWING_SERVICES, CONSTRUCTION_SERVICES, ServiceItem } from "@shared/services";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 
-const ALL_SERVICES = [
+const STATIC_SERVICES = [
   "Snow Plowing",
   "Excavation",
   "Grading & Land Prep",
@@ -135,6 +135,33 @@ export default function Home() {
   // Service images from admin
   const { data: imageOverrides } = trpc.serviceImages.getAllPublic.useQuery();
 
+  // Dynamic categories from DB (seeded with built-ins on first load)
+  const { data: dbCategories } = trpc.categories.listPublic.useQuery();
+
+  // Use DB as primary source; fall back to hardcoded if DB is empty/loading
+  const allPlowing: ServiceItem[] = dbCategories && dbCategories.length > 0
+    ? dbCategories.filter(c => c.category === "plowing").map(c => ({
+        id: c.serviceId,
+        name: c.name,
+        description: c.description || "",
+        image: c.image || IMAGES.heroPlow,
+        category: "plowing" as const,
+      }))
+    : PLOWING_SERVICES;
+  const allConstruction: ServiceItem[] = dbCategories && dbCategories.length > 0
+    ? dbCategories.filter(c => c.category === "construction").map(c => ({
+        id: c.serviceId,
+        name: c.name,
+        description: c.description || "",
+        image: c.image || IMAGES.heroConstruction,
+        category: "construction" as const,
+      }))
+    : CONSTRUCTION_SERVICES;
+
+  // Build service list for bid form (includes all from DB)
+  const dynamicNames = [...allPlowing, ...allConstruction].map(s => s.name);
+  const ALL_SERVICES = [...STATIC_SERVICES, ...dynamicNames].filter((v, i, a) => a.indexOf(v) === i);
+
   return (
     <div className="min-h-screen bg-black">
       <SiteNav />
@@ -248,7 +275,7 @@ export default function Home() {
             Reliable snow plowing, excavation, grading, and land preparation services for Estes Park and surrounding mountain communities.
           </p>
           <div className="grid md:grid-cols-2 gap-8">
-            {PLOWING_SERVICES.map((svc) => (
+            {allPlowing.map((svc) => (
               <div key={svc.id} className="group bg-gray-900 rounded-xl overflow-hidden border border-white/5 hover:border-green-500/30 transition-all duration-300">
                 <div className="aspect-[16/9] relative overflow-hidden">
                   <img src={imageOverrides?.[svc.id] || svc.image} alt={svc.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -275,7 +302,7 @@ export default function Home() {
             Complete construction services for Estes Park homes and businesses. From foundations to finishing touches, we do it all.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {CONSTRUCTION_SERVICES.map((svc) => (
+            {allConstruction.map((svc) => (
               <div key={svc.id} className="group bg-gray-900 rounded-xl overflow-hidden border border-white/5 hover:border-green-500/30 transition-all duration-300">
                 <div className="aspect-[4/3] relative overflow-hidden">
                   <img src={imageOverrides?.[svc.id] || svc.image} alt={svc.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />

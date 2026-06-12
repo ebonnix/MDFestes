@@ -3,7 +3,22 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
-import { getPublicReviews, getAllReviews, createReview, deleteReview, createContactSubmission, getServiceImages, getAllServiceImages, addServiceImage, deleteServiceImage, setPrimaryServiceImage } from "./db";
+import { getPublicReviews, getAllReviews, createReview, deleteReview, createContactSubmission, getServiceImages, getAllServiceImages, addServiceImage, deleteServiceImage, setPrimaryServiceImage, getServiceCategories, getServiceCategoriesByType, createServiceCategory, updateServiceCategory, deleteServiceCategory, seedBuiltInCategories } from "./db";
+import { CONSTRUCTION_SERVICES, PLOWING_SERVICES } from "@shared/services";
+
+// Seed built-in categories on first server start
+let seeded = false;
+async function ensureSeeded() {
+  if (seeded) return;
+  seeded = true;
+  try {
+    await seedBuiltInCategories([...CONSTRUCTION_SERVICES, ...PLOWING_SERVICES]);
+  } catch (e) {
+    // Non-fatal: if seeding fails, built-in fallback still works
+    console.error("[seed] Failed to seed categories:", e);
+    seeded = false;
+  }
+}
 import { notifyOwner } from "./_core/notification";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "9708895771";
@@ -222,6 +237,98 @@ export const appRouter = router({
           throw new Error("Invalid admin password");
         }
         await setPrimaryServiceImage(input.id, input.serviceId);
+        return { success: true };
+      }),
+  }),
+
+  // --- Admin: Service Category Management ---
+  categories: router({
+    // Public: get all categories (for public site rendering)
+    listPublic: publicProcedure.query(async () => {
+      await ensureSeeded();
+      return getServiceCategories();
+    }),
+
+    listByType: publicProcedure
+      .input(z.object({ category: z.enum(["construction", "plowing"]) }))
+      .query(async ({ input }) => {
+        return getServiceCategoriesByType(input.category);
+      }),
+
+    // Admin: list all categories
+    list: publicProcedure
+      .input(z.object({ password: z.string() }))
+      .query(async ({ input }) => {
+        if (input.password !== ADMIN_PASSWORD) {
+          throw new Error("Invalid admin password");
+        }
+        return getServiceCategories();
+      }),
+
+    // Admin: create category
+    create: publicProcedure
+      .input(z.object({
+        password: z.string(),
+        serviceId: z.string().min(1).max(100),
+        name: z.string().min(1).max(255),
+        description: z.string().max(2000).optional(),
+        image: z.string().max(1000).optional(),
+        category: z.enum(["construction", "plowing"]),
+        sortOrder: z.number().int().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        if (input.password !== ADMIN_PASSWORD) {
+          throw new Error("Invalid admin password");
+        }
+        await createServiceCategory({
+          serviceId: input.serviceId,
+          name: input.name,
+          description: input.description || null,
+          image: input.image || null,
+          category: input.category,
+          sortOrder: input.sortOrder ?? 0,
+        });
+        return { success: true };
+      }),
+
+    // Admin: update category (rename, change description, etc.)
+    update: publicProcedure
+      .input(z.object({
+        password: z.string(),
+        id: z.number(),
+        name: z.string().min(1).max(255).optional(),
+        description: z.string().max(2000).optional().nullable(),
+        image: z.string().max(1000).optional().nullable(),
+        category: z.enum(["construction", "plowing"]).optional(),
+        sortOrder: z.number().int().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        if (input.password !== ADMIN_PASSWORD) {
+          throw new Error("Invalid admin password");
+        }
+        const { password, id, ...data } = input;
+        // Filter out undefined values
+        const updateData: Record<string, unknown> = {};
+        if (data.name !== undefined) updateData.name = data.name;
+        if (data.description !== undefined) updateData.description = data.description;
+        if (data.image !== undefined) updateData.image = data.image;
+        if (data.category !== undefined) updateData.category = data.category;
+        if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;
+        await updateServiceCategory(id, updateData as any);
+        return { success: true };
+      }),
+
+    // Admin: delete category
+    delete: publicProcedure
+      .input(z.object({
+        password: z.string(),
+        id: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        if (input.password !== ADMIN_PASSWORD) {
+          throw new Error("Invalid admin password");
+        }
+        await deleteServiceCategory(input.id);
         return { success: true };
       }),
   }),

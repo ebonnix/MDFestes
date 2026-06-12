@@ -1,6 +1,6 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, reviews, contactSubmissions, serviceImages, InsertReview, InsertContactSubmission, InsertServiceImage } from "../drizzle/schema";
+import { InsertUser, users, reviews, contactSubmissions, serviceImages, serviceCategories, InsertReview, InsertContactSubmission, InsertServiceImage, InsertServiceCategory } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -155,4 +155,62 @@ export async function setPrimaryServiceImage(id: number, serviceId: string) {
   await db.update(serviceImages).set({ isPrimary: 0 }).where(eq(serviceImages.serviceId, serviceId));
   // Set new primary
   await db.update(serviceImages).set({ isPrimary: 1 }).where(eq(serviceImages.id, id));
+}
+
+// --- Service Categories ---
+
+export async function getServiceCategories() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(serviceCategories).orderBy(asc(serviceCategories.sortOrder), asc(serviceCategories.createdAt));
+}
+
+export async function getServiceCategoriesByType(category: "construction" | "plowing") {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(serviceCategories).where(eq(serviceCategories.category, category)).orderBy(asc(serviceCategories.sortOrder), asc(serviceCategories.createdAt));
+}
+
+export async function createServiceCategory(data: InsertServiceCategory) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(serviceCategories).values(data);
+}
+
+export async function updateServiceCategory(id: number, data: { name?: string; description?: string | null; image?: string | null; category?: "construction" | "plowing"; sortOrder?: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(serviceCategories).set(data).where(eq(serviceCategories.id, id));
+}
+
+export async function deleteServiceCategory(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Get the serviceId before deleting so we can cascade
+  const [cat] = await db.select().from(serviceCategories).where(eq(serviceCategories.id, id));
+  if (cat) {
+    // Cascade: delete related service_images
+    await db.delete(serviceImages).where(eq(serviceImages.serviceId, cat.serviceId));
+  }
+  await db.delete(serviceCategories).where(eq(serviceCategories.id, id));
+}
+
+export async function seedBuiltInCategories(builtInServices: Array<{ id: string; name: string; description: string; image: string; category: "construction" | "plowing" }>) {
+  const db = await getDb();
+  if (!db) return;
+  // Check if any categories exist
+  const existing = await db.select().from(serviceCategories);
+  if (existing.length > 0) return; // Already seeded
+  // Insert all built-in services
+  for (let i = 0; i < builtInServices.length; i++) {
+    const svc = builtInServices[i];
+    await db.insert(serviceCategories).values({
+      serviceId: svc.id,
+      name: svc.name,
+      description: svc.description,
+      image: svc.image,
+      category: svc.category,
+      sortOrder: i,
+    });
+  }
 }
