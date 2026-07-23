@@ -1,0 +1,14 @@
+:root{
+--radius-sm:3px; --radius-md:6px; --radius-lg:10px; --radius-pill:999px;
+--border-hairline:1px solid var(--border-default); --border-rule:2px solid var(--border-strong);
+/* Hard "stamped" shadows (marketing, cards on paper) */
+--shadow-stamp-sm:3px 3px 0 var(--ink-900); --shadow-stamp:5px 5px 0 var(--ink-900); --shadow-stamp-accent:5px 5px 0 var(--orange-500);
+/* Soft app shadows */
+--shadow-card:0 1px 2px rgba(14,27,44,.06),0 4px 12px rgba(14,27,44,.06); --shadow-pop:0 4px 8px rgba(14,27,44,.10),0 16px 40px rgba(14,27,44,.16);
+/* Motifs */
+--hazard-stripe:repeating-linear-gradient(-45deg,var(--yellow-500) 0 10px,var(--ink-900) 10px 20px);
+--blueprint-grid:linear-gradient(rgba(30,98,224,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(30,98,224,.07) 1px,transparent 1px); /* @kind other */
+--blueprint-grid-size:24px 24px;
+--focus-ring:0 0 0 2px var(--paper-0),0 0 0 4px var(--blue-500);
+--ease-snap:cubic-bezier(.2,.9,.25,1); /* @kind other */ --dur-fast:120ms; /* @kind other */ --dur-med:200ms; /* @kind other */
+}

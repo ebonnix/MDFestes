@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/automated-estimating-design-system-620df83d-219c-4794-8834-29efd45026a4/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/automated-estimating-design-system-620df83d-219c-4794-8834-29efd45026a4/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/automated-estimating-design-system-620df83d-219c-4794-8834-29efd45026a4/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/automated-estimating-design-system-620df83d-219c-4794-8834-29efd45026a4/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/automated-estimating-design-system-620df83d-219c-4794-8834-29efd45026a4/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/automated-estimating-design-system-620df83d-219c-4794-8834-29efd45026a4/styles.css">
+  <script src="_ds/automated-estimating-design-system-620df83d-219c-4794-8834-29efd45026a4/_ds_bundle.js"></script>
+  <script src="https://unpkg.com/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+  <script src="store.js"></script>
+  <script src="icons.js"></script>
+  <style>
+    html,body{margin:0;padding:0;background:var(--ink-900);}
+    a{color:var(--blue-500);text-decoration:none;} a:hover{color:var(--blue-100);text-decoration:underline;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+    input:focus,select:focus,textarea:focus{outline:none;box-shadow:var(--focus-ring);}
+  </style>
+</helmet>
+<div style="min-height:100vh;background-color:var(--ink-900);background-image:var(--blueprint-grid);background-size:24px 24px;display:flex;align-items:flex-start;justify-content:center;padding:28px 16px;font-family:var(--font-body)">
+  <div style="width:402px;background:var(--ink-800);border-radius:34px;padding:11px;box-shadow:var(--shadow-pop)">
+    <div style="border-radius:24px;overflow:hidden;background:var(--paper-100);display:flex;flex-direction:column;min-height:800px;position:relative">
+
+      <!-- status bar -->
+      <div style="background:var(--ink-900);color:var(--paper-50);display:flex;align-items:center;justify-content:space-between;padding:10px 16px;flex:none">
+        <span style="font-family:var(--font-mono);font-size:12.5px;font-weight:600">{{ clock }}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="display:flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:9.5px;color:{{ gpsChipColor }}"><span style="width:6px;height:6px;border-radius:999px;background:{{ gpsChipColor }}"></span>GPS</span>
+          <span onClick="{{ toggleOffline }}" title="Toggle signal (demo)" style="cursor:pointer;color:{{ sigColor }};line-height:0"><l-icon name="{{ sigIcon }}" size="14"></l-icon></span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--gray-300)">87%</span>
+        </div>
+      </div>
+      <sc-if value="{{ offline }}" hint-placeholder-val="{{ false }}">
+        <div style="background:var(--yellow-100);border-bottom:1px solid var(--yellow-500);padding:8px 14px;display:flex;gap:8px;align-items:center;font-size:11.5px;color:#7A5C00;flex:none">
+          <l-icon name="wifi-off" size="13"></l-icon><span style="flex:1">No signal — GPS, times &amp; photos saving on the phone. Syncs when you're back in coverage.</span>
+          <sc-if value="{{ hasQueue }}" hint-placeholder-val="{{ false }}"><span style="font-family:var(--font-mono);font-weight:600">{{ queueN }} queued</span></sc-if>
+        </div>
+      </sc-if>
+
+      <!-- ===== SIGN IN ===== -->
+      <sc-if value="{{ scrSignin }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;display:flex;flex-direction:column;padding:26px 22px 22px;gap:18px">
+          <div>
+            <div style="font-family:var(--font-display);font-stretch:125%;font-weight:900;font-size:26px;text-transform:uppercase;letter-spacing:-0.01em;color:var(--ink-900)">Plowops</div>
+            <div style="font-size:13px;color:var(--gray-500);margin-top:3px">{{ companyName }} · driver</div>
+          </div>
+          <div style="height:6px;background:var(--hazard-stripe);border-radius:1px;flex:none"></div>
+          <div style="flex:1;min-height:0">
+            <div style="font-size:11px;font-weight:640;letter-spacing:0.08em;text-transform:uppercase;color:var(--gray-500);margin-bottom:8px">Who's driving?</div>
+            <div style="display:flex;flex-direction:column;gap:7px;max-height:280px;overflow-y:auto">
+              <sc-for list="{{ driverBtns }}" as="d" hint-placeholder-count="5">
+                <div onClick="{{ d.pick }}" style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:{{ d.bg }};border:{{ d.border }};border-radius:6px;cursor:pointer">
+                  <span style="width:32px;height:32px;flex:none;background:var(--ink-900);color:var(--paper-50);font-family:var(--font-display);font-stretch:125%;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;border-radius:3px">{{ d.initials }}</span>
+                  <span style="flex:1;font-size:14px;font-weight:600;color:var(--ink-900)">{{ d.name }}</span>
+                  <sc-if value="{{ d.on }}" hint-placeholder-val="{{ false }}"><span style="color:var(--blue-600)"><l-icon name="check" size="16"></l-icon></span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <sc-if value="{{ needsGps }}" hint-placeholder-val="{{ false }}">
+            <div style="background:var(--paper-0);border:2px solid var(--ink-900);border-radius:6px;box-shadow:var(--shadow-stamp-sm);padding:14px 16px">
+              <div style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:640;color:var(--ink-900)"><l-icon name="locate-fixed" size="16"></l-icon>Turn on location first</div>
+              <div style="font-size:12px;color:var(--text-body);line-height:1.5;margin-top:7px">1. Keep Location <b>Always on</b> while on the clock.<br>2. Your route, times and photos get GPS-stamped — that's your proof of service.<br>3. No signal? Everything saves on the phone and syncs later.</div>
+              <div onClick="{{ enableGps }}" style="margin-top:11px;height:40px;background:var(--blue-500);color:#fff;border-radius:3px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;font-weight:640;cursor:pointer"><l-icon name="locate-fixed" size="15"></l-icon>Enable location</div>
+            </div>
+          </sc-if>
+          <div>
+            <div onClick="{{ clockIn }}" style="height:52px;background:{{ clockInBg }};color:{{ clockInColor }};border-radius:3px;display:flex;align-items:center;justify-content:center;gap:9px;font-family:var(--font-display);font-stretch:125%;font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:0.02em;cursor:{{ clockInCursor }}"><l-icon name="clock" size="17"></l-icon>Clock in</div>
+            <div style="font-size:11px;color:var(--gray-500);text-align:center;margin-top:7px">Clock-in starts your timesheet and GPS log.</div>
+          </div>
+          <div style="text-align:center;font-size:12px"><a href="Admin Panel.dc.html">Dispatch? Open the admin panel →</a></div>
+        </div>
+      </sc-if>
+
+      <!-- ===== HOME ===== -->
+      <sc-if value="{{ scrHome }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:flex;flex-direction:column;padding:20px 20px 22px;gap:14px;overflow-y:auto">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div style="font-size:16px;font-weight:640;color:var(--ink-900)">{{ driverName }}</div>
+              <div style="display:inline-flex;align-items:center;gap:6px;margin-top:4px;height:20px;padding:0 9px;border-radius:999px;background:var(--green-100);color:var(--green-600);font-size:10px;font-weight:640;letter-spacing:0.08em;text-transform:uppercase"><span style="width:6px;height:6px;border-radius:999px;background:var(--green-500);animation:pulse 1.6s infinite"></span>On the clock</div>
+            </div>
+            <div style="text-align:right"><div style="font-family:var(--font-mono);font-size:24px;font-weight:600;color:var(--ink-900)">{{ elapsed }}</div><div style="font-size:10.5px;color:var(--gray-500)">since {{ clockInAt }}</div></div>
+          </div>
+          <div style="background:var(--paper-0);border:1px solid var(--border-subtle);border-radius:6px;box-shadow:var(--shadow-card);padding:15px 16px">
+            <div style="font-size:11px;font-weight:640;letter-spacing:0.08em;text-transform:uppercase;color:var(--gray-500);margin-bottom:9px">Truck check-in</div>
+            <div style="display:flex;gap:9px;align-items:center">
+              <select value="{{ truckSel }}" onChange="{{ setTruckSel }}" style="flex:1;height:40px;padding:0 10px;border:1px solid var(--border-default);border-radius:3px;background:var(--paper-0);font-family:var(--font-mono);font-size:13px;color:var(--text-body)">
+                <sc-for list="{{ truckOpts }}" as="o" hint-placeholder-count="3"><option value="{{ o.id }}">{{ o.label }}</option></sc-for>
+              </select>
+              <sc-if value="{{ notCheckedIn }}" hint-placeholder-val="{{ true }}"><div onClick="{{ checkIn }}" style="height:40px;padding:0 16px;background:var(--ink-900);color:var(--paper-50);border-radius:3px;display:flex;align-items:center;font-size:13px;font-weight:640;cursor:pointer">Check in</div></sc-if>
+              <sc-if value="{{ checkedIn }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:5px;color:var(--green-600);font-size:13px;font-weight:640"><l-icon name="check" size="15"></l-icon>In</span></sc-if>
+            </div>
+            <sc-if value="{{ truckMsg }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;color:var(--gray-500);margin-top:8px">{{ truckMsg }}</div></sc-if>
+          </div>
+          <sc-if value="{{ oilWarn }}" hint-placeholder-val="{{ false }}">
+            <div style="background:var(--paper-0);border:1px solid var(--border-subtle);border-radius:6px;overflow:hidden;box-shadow:var(--shadow-card)">
+              <div style="height:6px;background:var(--hazard-stripe)"></div>
+              <div style="padding:13px 16px">
+                <div style="display:flex;gap:8px;align-items:center;font-size:13px;font-weight:640;color:{{ oilWarnColor }}"><l-icon name="droplets" size="15"></l-icon>{{ oilWarnTitle }}</div>
+                <div style="font-size:12px;color:var(--text-body);margin-top:4px">{{ oilWarnBody }}</div>
+                <div onClick="{{ flagOil }}" style="font-size:12px;font-weight:640;color:var(--blue-600);cursor:pointer;margin-top:7px">Notify the shop →</div>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasRoute }}" hint-placeholder-val="{{ false }}">
+            <div style="background:var(--ink-900);border-radius:6px;padding:16px;color:var(--paper-50)">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="font-size:11px;font-weight:640;letter-spacing:0.08em;text-transform:uppercase;color:var(--gray-400)">Today's route</div>
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--yellow-500)">{{ routeMeta }}</span>
+              </div>
+              <div style="font-family:var(--font-display);font-stretch:125%;font-weight:900;font-size:21px;text-transform:uppercase;margin-top:6px">{{ routeHeadline }}</div>
+              <div style="font-size:12px;color:var(--gray-300);margin-top:3px">{{ routeSub }}</div>
+              <div onClick="{{ startRoute }}" style="margin-top:13px;height:46px;background:var(--orange-500);color:var(--ink-900);border-radius:3px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:640;cursor:pointer"><l-icon name="navigation" size="16"></l-icon>{{ startLabel }}</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noRoute }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px dashed var(--gray-300);border-radius:6px;padding:18px;text-align:center;font-size:13px;color:var(--gray-500)">No route assigned yet — dispatch builds it in the admin panel.</div>
+          </sc-if>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:auto">
+            <div onClick="{{ goReport }}" style="background:var(--paper-0);border:1px solid var(--border-default);border-radius:6px;padding:13px;display:flex;flex-direction:column;gap:7px;cursor:pointer">
+              <span style="color:var(--red-500)"><l-icon name="wrench" size="18"></l-icon></span>
+              <span style="font-size:12.5px;font-weight:640;color:var(--ink-900)">Report broken tool</span>
+            </div>
+            <div onClick="{{ endShiftEarly }}" style="background:var(--paper-0);border:1px solid var(--border-default);border-radius:6px;padding:13px;display:flex;flex-direction:column;gap:7px;cursor:pointer">
+              <span style="color:var(--gray-500)"><l-icon name="log-out" size="18"></l-icon></span>
+              <span style="font-size:12.5px;font-weight:640;color:var(--ink-900)">End shift</span>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===== ROUTE / NAV ===== -->
+      <sc-if value="{{ scrRoute }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:flex;flex-direction:column;overflow-y:auto">
+          <div style="position:relative;height:250px;flex:none;background-color:var(--paper-50);background-image:var(--blueprint-grid);background-size:20px 20px;border-bottom:2px solid var(--ink-900)">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><polyline points="{{ navPts }}" fill="none" stroke="var(--blue-500)" stroke-width="2" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"></polyline></svg>
+            <sc-for list="{{ crumbDots }}" as="c" hint-placeholder-count="0"><div style="position:absolute;left:{{ c.x }}%;top:{{ c.y }}%;width:3px;height:3px;border-radius:999px;background:var(--gray-400);transform:translate(-50%,-50%)"></div></sc-for>
+            <sc-for list="{{ navStops }}" as="s" hint-placeholder-count="0">
+              <div style="position:absolute;left:{{ s.x }}%;top:{{ s.y }}%;transform:translate(-50%,-50%);width:18px;height:18px;background:{{ s.bg }};color:{{ s.fg }};font-family:var(--font-mono);font-size:9.5px;font-weight:600;display:flex;align-items:center;justify-content:center;border:1px solid var(--paper-0);z-index:2">{{ s.n }}</div>
+            </sc-for>
+            <div style="position:absolute;left:{{ meX }}%;top:{{ meY }}%;transform:translate(-50%,-50%);z-index:3"><div style="width:13px;height:13px;background:var(--orange-500);border:2px solid var(--ink-900);animation:pulse 1.4s infinite"></div></div>
+            <div style="position:absolute;top:8px;left:10px;background:rgba(14,27,44,.85);color:var(--paper-50);font-family:var(--font-mono);font-size:9px;padding:3px 7px;border-radius:2px">{{ gpsReadout }}</div>
+          </div>
+          <sc-if value="{{ paused }}" hint-placeholder-val="{{ false }}">
+            <div style="background:var(--yellow-100);border-bottom:1px solid var(--yellow-500);padding:9px 16px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:#7A5C00;flex:none"><l-icon name="pause" size="14"></l-icon>Navigation paused — timer keeps running, GPS log resumes when you do.</div>
+          </sc-if>
+          <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;flex:1">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:11px;font-weight:640;letter-spacing:0.08em;text-transform:uppercase;color:var(--gray-500)">Stop {{ stopPos }}</span>
+              <span style="font-family:var(--font-mono);font-size:11.5px;color:var(--gray-500)">{{ milesSoFar }} mi · {{ elapsed }}</span>
+            </div>
+            <sc-if value="{{ hasNext }}" hint-placeholder-val="{{ true }}">
+              <div style="background:var(--paper-0);border:2px solid var(--ink-900);border-radius:6px;box-shadow:var(--shadow-stamp-sm);padding:15px 16px">
+                <div style="font-size:16px;font-weight:640;color:var(--ink-900)">{{ nextName }}</div>
+                <div style="font-size:12.5px;color:var(--gray-500);margin-top:2px">{{ nextAddr }}</div>
+                <div style="display:flex;gap:14px;margin-top:8px;font-family:var(--font-mono);font-size:12px;color:var(--blue-600)"><span>{{ nextDist }} mi out</span><span style="color:var(--gray-500)">{{ nextType }}</span></div>
+                <sc-if value="{{ arrived }}" hint-placeholder-val="{{ false }}">
+                  <div onClick="{{ openStop }}" style="margin-top:12px;height:46px;background:var(--orange-500);color:var(--ink-900);border-radius:3px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:640;cursor:pointer"><l-icon name="camera" size="16"></l-icon>Arrived — service this stop</div>
+                </sc-if>
+                <sc-if value="{{ driving }}" hint-placeholder-val="{{ true }}">
+                  <div style="margin-top:12px;height:46px;background:var(--paper-200);color:var(--gray-500);border-radius:3px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:640"><l-icon name="navigation" size="15"></l-icon>Driving… GPS logging</div>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{ allDone }}" hint-placeholder-val="{{ false }}">
+              <div style="background:var(--green-100);border-radius:6px;padding:16px;text-align:center;font-size:14px;font-weight:640;color:var(--green-600)">All stops serviced. End the route to close your timesheet.</div>
+            </sc-if>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <sc-for list="{{ stopList }}" as="s" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:10px;padding:7px 4px;font-size:12.5px;border-bottom:1px solid var(--paper-200)">
+                  <span style="width:17px;height:17px;flex:none;background:{{ s.bg }};color:{{ s.fg }};font-family:var(--font-mono);font-size:9px;display:flex;align-items:center;justify-content:center;border-radius:2px">{{ s.mark }}</span>
+                  <span style="flex:1;color:{{ s.color }};font-weight:500">{{ s.name }}</span>
+                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--gray-400)">{{ s.ts }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:auto">
+              <div onClick="{{ togglePause }}" style="flex:1;height:44px;border:1px solid var(--ink-900);color:var(--ink-900);border-radius:3px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:640;cursor:pointer"><l-icon name="{{ pauseIcon }}" size="15"></l-icon>{{ pauseLabel }}</div>
+              <div onClick="{{ endRoute }}" style="flex:1;height:44px;background:var(--ink-900);color:var(--paper-50);border-radius:3px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:640;cursor:pointer"><l-icon name="flag" size="15"></l-icon>End route</div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===== STOP COMPLETION ===== -->
+      <sc-if value="{{ scrStop }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:flex;flex-direction:column;padding:18px 20px;gap:13px;overflow-y:auto">
+          <div onClick="{{ backToRoute }}" style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:640;color:var(--blue-600);cursor:pointer"><l-icon name="chevron-left" size="15"></l-icon>Route</div>
+          <div>
+            <div style="font-size:17px;font-weight:640;color:var(--ink-900)">{{ nextName }}</div>
+            <div style="font-size:12.5px;color:var(--gray-500)">{{ nextAddr }}</div>
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--blue-600);margin-top:3px">Arrived {{ arrivedAt }} · {{ gpsReadout }}</div>
+          </div>
+          <sc-if value="{{ noPhoto }}" hint-placeholder-val="{{ true }}">
+            <div style="position:relative;height:270px;background-color:var(--ink-900);background-image:var(--blueprint-grid);background-size:18px 18px;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">
+              <div style="width:150px;height:150px;border:1.5px solid rgba(250,248,244,.45);border-radius:4px"></div>
+              <div style="position:absolute;color:rgba(250,248,244,.6);font-family:var(--font-mono);font-size:10px;top:12px;left:12px">IN-APP CAMERA</div>
+              <div onClick="{{ capture }}" style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);width:58px;height:58px;border-radius:999px;background:var(--paper-0);border:4px solid var(--orange-500);cursor:pointer"></div>
+            </div>
+            <div style="font-size:11.5px;color:var(--gray-500);text-align:center">Photograph the cleared drive/lot — it's stamped with time + GPS.</div>
+          </sc-if>
+          <sc-if value="{{ hasPhoto }}" hint-placeholder-val="{{ false }}">
+            <div style="position:relative;height:220px;background-color:var(--ink-800);background-image:var(--blueprint-grid);background-size:16px 16px;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--gray-400)">
+              <l-icon name="camera" size="30"></l-icon>
+              <span style="position:absolute;left:0;right:0;bottom:0;background:rgba(14,27,44,.9);color:var(--paper-50);font-family:var(--font-mono);font-size:10px;padding:5px 10px">{{ photoStamp }}</span>
+              <span style="position:absolute;top:10px;right:10px;display:inline-flex;align-items:center;gap:4px;background:var(--green-100);color:var(--green-600);font-size:10px;font-weight:640;letter-spacing:0.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px"><l-icon name="check" size="11"></l-icon>Captured</span>
+            </div>
+            <div onClick="{{ retake }}" style="font-size:12px;font-weight:640;color:var(--blue-600);cursor:pointer;text-align:center">Retake photo</div>
+            <input placeholder="Note for the client (optional)" value="{{ noteVal }}" onChange="{{ setNote }}" style="height:42px;padding:0 12px;border:1px solid var(--border-default);border-radius:3px;background:var(--paper-0);font-family:var(--font-body);font-size:13.5px;color:var(--text-body)">
+            <div onClick="{{ sendJob }}" style="height:50px;background:var(--orange-500);color:var(--ink-900);border-radius:3px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:640;cursor:pointer"><l-icon name="send" size="15"></l-icon>{{ sendJobLabel }}</div>
+            <div style="font-size:11px;color:var(--gray-500);text-align:center">Emails {{ clientEmail }} and pings dispatch with the proof.</div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- ===== REPORT BREAKAGE ===== -->
+      <sc-if value="{{ scrReport }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:flex;flex-direction:column;padding:18px 20px;gap:13px;overflow-y:auto">
+          <div onClick="{{ backHome }}" style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:640;color:var(--blue-600);cursor:pointer"><l-icon name="chevron-left" size="15"></l-icon>Back</div>
+          <div style="font-family:var(--font-display);font-stretch:125%;font-weight:900;font-size:20px;text-transform:uppercase;color:var(--ink-900)">Report a breakdown</div>
+          <div style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;font-weight:640;letter-spacing:0.08em;text-transform:uppercase;color:var(--gray-500)">What broke?</span>
+            <select value="{{ repItemVal }}" onChange="{{ setRepItem }}" style="height:42px;padding:0 10px;border:1px solid var(--border-default);border-radius:3px;background:var(--paper-0);font-family:var(--font-body);font-size:13.5px">
+              <sc-for list="{{ repItemOpts }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}">{{ o.label }}</option></sc-for>
+            </select></div>
+          <sc-if value="{{ noRepPhoto }}" hint-placeholder-val="{{ true }}">
+            <div style="position:relative;height:190px;background-color:var(--ink-900);background-image:var(--blueprint-grid);background-size:18px 18px;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">
+              <div style="width:110px;height:110px;border:1.5px solid rgba(250,248,244,.45);border-radius:4px"></div>
+              <div onClick="{{ captureRep }}" style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);width:50px;height:50px;border-radius:999px;background:var(--paper-0);border:4px solid var(--red-500);cursor:pointer"></div>
+              <div style="position:absolute;color:rgba(250,248,244,.6);font-family:var(--font-mono);font-size:10px;top:12px;left:12px">PHOTO THE DAMAGE</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasRepPhoto }}" hint-placeholder-val="{{ false }}">
+            <div style="position:relative;height:130px;background-color:var(--ink-800);background-image:var(--blueprint-grid);background-size:14px 14px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--gray-400);overflow:hidden">
+              <l-icon name="wrench" size="24"></l-icon>
+              <span style="position:absolute;left:0;right:0;bottom:0;background:rgba(14,27,44,.9);color:var(--paper-50);font-family:var(--font-mono);font-size:9.5px;padding:4px 8px">{{ repStamp }}</span>
+            </div>
+          </sc-if>
+          <textarea placeholder="What happened? What do you need?" value="{{ repMsgVal }}" onChange="{{ setRepMsg }}" style="height:84px;padding:10px 12px;border:1px solid var(--border-default);border-radius:3px;background:var(--paper-0);font-family:var(--font-body);font-size:13.5px;color:var(--text-body);resize:none"></textarea>
+          <div style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;font-weight:640;letter-spacing:0.08em;text-transform:uppercase;color:var(--gray-500)">Send to</span>
+            <select value="{{ repToVal }}" onChange="{{ setRepTo }}" style="height:42px;padding:0 10px;border:1px solid var(--border-default);border-radius:3px;background:var(--paper-0);font-family:var(--font-body);font-size:13.5px">
+              <sc-for list="{{ mechOpts }}" as="o" hint-placeholder-count="3"><option value="{{ o.id }}">{{ o.name }}</option></sc-for>
+            </select></div>
+          <div onClick="{{ sendRepair }}" style="height:48px;background:var(--ink-900);color:var(--paper-50);border-radius:3px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:640;cursor:pointer;margin-top:auto"><l-icon name="send" size="15"></l-icon>{{ sendRepLabel }}</div>
+        </div>
+      </sc-if>
+
+      <!-- ===== SUMMARY ===== -->
+      <sc-if value="{{ scrSummary }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:flex;flex-direction:column;padding:20px;gap:14px;overflow-y:auto">
+          <div style="background:var(--ink-900);border-radius:6px;padding:18px;color:var(--paper-50)">
+            <div style="font-size:11px;font-weight:640;letter-spacing:0.08em;text-transform:uppercase;color:var(--yellow-500)">Route complete</div>
+            <div style="font-family:var(--font-display);font-stretch:125%;font-weight:900;font-size:24px;text-transform:uppercase;margin-top:4px">Good work out there.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="background:var(--paper-0);border:1px solid var(--border-subtle);border-radius:6px;padding:13px"><div style="font-size:10.5px;font-weight:640;letter-spacing:0.08em;text-transform:uppercase;color:var(--gray-500)">Hours</div><div style="font-family:var(--font-mono);font-size:21px;font-weight:600;margin-top:4px">{{ sumHours }}</div><div style="font-family:var(--font-mono);font-size:10.5px;color:var(--gray-500)">{{ sumInOut }}</div></div>
+            <div style="background:var(--paper-0);border:1px solid var(--border-subtle);border-radius:6px;padding:13px"><div style="font-size:10.5px;font-weight:640;letter-spacing:0.08em;text-transform:uppercase;color:var(--gray-500)">Miles</div><div style="font-family:var(--font-mono);font-size:21px;font-weight:600;margin-top:4px">{{ sumMiles }}</div><div style="font-family:var(--font-mono);font-size:10.5px;color:var(--gray-500)">~{{ sumFuel }} fuel</div></div>
+          </div>
+          <div style="background:var(--paper-0);border:1px solid var(--border-subtle);border-radius:6px;padding:15px 16px">
+            <div style="font-size:11px;font-weight:640;letter-spacing:0.08em;text-transform:uppercase;color:var(--gray-500);margin-bottom:8px">Addresses serviced — sent to dispatch</div>
+            <sc-for list="{{ sumStops }}" as="s" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--paper-200);font-size:12.5px">
+                <span style="color:var(--green-600)"><l-icon name="check" size="14"></l-icon></span>
+                <span style="flex:1;color:var(--ink-900);font-weight:500">{{ s.addr }}</span>
+                <span style="font-family:var(--font-mono);font-size:10.5px;color:var(--gray-500)">{{ s.ts }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ notSentTs }}" hint-placeholder-val="{{ true }}">
+            <div onClick="{{ sendTimesheet }}" style="height:50px;background:var(--orange-500);color:var(--ink-900);border-radius:3px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:640;cursor:pointer;margin-top:auto"><l-icon name="send" size="15"></l-icon>Send timesheet to dispatch</div>
+          </sc-if>
+          <sc-if value="{{ sentTs }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;justify-content:center;gap:7px;color:var(--green-600);font-size:13.5px;font-weight:640;margin-top:auto"><l-icon name="check" size="16"></l-icon>Timesheet sent — dispatch has your day.</div>
+            <div onClick="{{ clockOut }}" style="height:48px;background:var(--ink-900);color:var(--paper-50);border-radius:3px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:640;cursor:pointer"><l-icon name="log-out" size="15"></l-icon>Clock out</div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- toast -->
+      <sc-if value="{{ toastOn }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:14px;right:14px;bottom:16px;z-index:50">
+          <x-import component-from-global-scope="AutomatedEstimatingDesignSystem_620df8.Toast" variant="{{ toastVariant }}" title="{{ toastTitle }}" detail="{{ toastDetail }}" onDismiss="{{ dismissToast }}" style="{{ toastStyle }}" hint-size="100%,60px"></x-import>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:440,&quot;height&quot;:900},&quot;simSpeed&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1,&quot;min&quot;:0.5,&quot;max&quot;:4,&quot;step&quot;:0.5,&quot;unit&quot;:&quot;x&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Simulation&quot;},&quot;showInstructions&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Simulation&quot;}}">
+class Component extends DCLogic {
+  state = { ready:false, screen:'signin', pick:null, gpsOn:false, offline:false, queue:[],
+    clockInTs:null, truckSel:'', truckId:null, navOn:false, paused:false, pos:{x:50,y:96}, miles:0, crumbs:[], arrived:false,
+    photo:null, note:'', arrivedTs:null, repItem:'', repMsg:'', repTo:'', repPhoto:null, sumSent:false, sum:null, now:Date.now() };
+
+  componentDidMount(){
+    const boot=()=>{ if(!window.PlowStore){ setTimeout(boot,100); return; }
+      this._unsub=PlowStore.subscribe(()=>this.forceUpdate());
+      this.setState({ready:true});
+    }; boot();
+    this._clk=setInterval(()=>this.setState({now:Date.now()}),1000);
+    this._sim=setInterval(()=>this.tick(),1400);
+  }
+  componentWillUnmount(){ if(this._unsub)this._unsub(); clearInterval(this._clk); clearInterval(this._sim); }
+
+  coId(){ const s=PlowStore.get(); return s.session.companyId||'co1'; }
+  ent(k){ const s=PlowStore.get(); const id=this.coId(); return (s[k]||[]).filter(e=>e.co===id); }
+  route(){ const t=PlowStore.today(0); return this.ent('routes').find(r=>r.date===t&&r.driverId===this.state.pick); }
+  stopDone(st){ return st.status==='done'||this.state.queue.some(q=>q.kind==='job'&&q.clientId===st.clientId); }
+  nextStop(){ const r=this.route(); if(!r)return null; return r.stops.find(s=>!this.stopDone(s))||null; }
+  gpsNow(){ const p=this.state.pos; return (39.79-p.y*0.0016).toFixed(4)+'° N, '+Math.abs(-105.08+p.x*0.0022).toFixed(4)+'° W'; }
+  hm(d){ return String(((d.getHours()+11)%12)+1)+':'+PlowStore.pad(d.getMinutes())+(d.getHours()<12?' AM':' PM'); }
+  hm24(d){ return PlowStore.pad(d.getHours())+':'+PlowStore.pad(d.getMinutes()); }
+  toast(variant,title,detail){ clearTimeout(this._tt); this.setState({toast:{variant,title,detail}}); this._tt=setTimeout(()=>this.setState({toast:null}),4000); }
+
+  tick(){
+    if(!this.state.ready||!this.state.navOn||this.state.paused||this.state.arrived)return;
+    const ns=this.nextStop(); if(!ns){ this.setState({navOn:false}); return; }
+    const c=this.ent('clients').find(c=>c.id===ns.clientId); if(!c)return;
+    const sp=this.props.simSpeed??1;
+    let {x,y}=this.state.pos; const dx=c.x-x, dy=c.y-y, d=Math.hypot(dx,dy)||0.001;
+    const step=Math.min(d,2.4*sp);
+    x+=dx/d*step; y+=dy/d*step;
+    const crumb={x:+x.toFixed(2),y:+y.toFixed(2),t:Date.now()};
+    const arrived=(d-step)<0.9;
+    this.setState(s=>({pos:{x,y},miles:s.miles+step*0.14,crumbs:[...s.crumbs.slice(-240),crumb],arrived}),()=>{
+      this._tn=(this._tn||0)+1;
+      if(!this.state.offline&&this._tn%3===0){ const rt=this.route(); if(rt) PlowStore.update(st=>{ const r=st.routes.find(q=>q.id===rt.id); if(r){ r.pos={x:this.state.pos.x,y:this.state.pos.y}; r.status=this.state.paused?'paused':'active'; } }); }
+    });
+  }
+
+  commitJob(payload){
+    PlowStore.update(s=>{
+      s.jobs.push(payload.job);
+      const r=s.routes.find(q=>q.id===payload.routeId);
+      if(r){ const st=r.stops.find(x=>x.clientId===payload.clientId); if(st){st.status='done';st.ts=payload.job.ts;} }
+    });
+  }
+  commitRepair(rep){ PlowStore.update(s=>{ s.repairs.push(rep); }); }
+
+  renderVals(){
+    const V={ toastStyle:{width:'100%'} };
+    if(!this.state.ready||!window.PlowStore){ return { scrSignin:true, clock:'--:--', driverBtns:[], gpsChipColor:'var(--gray-500)', sigIcon:'wifi', sigColor:'var(--gray-300)', toastStyle:{width:'100%'} }; }
+    const P=PlowStore, S=P.get(), today=P.today(0);
+    const co=S.companies.find(c=>c.id===this.coId())||{name:'PlowOps'};
+    const drivers=this.ent('drivers'), trucks=this.ent('trucks'), clients=this.ent('clients'),
+      schedule=this.ent('schedule'), mechanics=this.ent('mechanics'), equipment=this.ent('equipment');
+    const clientById=id=>clients.find(c=>c.id===id);
+    const now=new Date(this.state.now);
+    V.clock=this.hm(now);
+    V.companyName=co.name;
+    V.gpsChipColor=this.state.gpsOn?'var(--green-500)':'var(--gray-500)';
+    V.offline=this.state.offline; V.sigIcon=this.state.offline?'wifi-off':'wifi'; V.sigColor=this.state.offline?'var(--yellow-500)':'var(--gray-300)';
+    V.queueN=String(this.state.queue.length); V.hasQueue=this.state.queue.length>0;
+    V.toggleOffline=()=>{ const going=!this.state.offline;
+      if(!going&&this.state.queue.length){ const q=this.state.queue.slice(); q.forEach(item=>{ if(item.kind==='job')this.commitJob(item); else this.commitRepair(item.rep); });
+        this.setState({offline:false,queue:[]}); this.toast('success','Back in coverage','Synced '+q.length+' queued update'+(q.length>1?'s':'')+' to dispatch.'); }
+      else this.setState({offline:going}); };
+    ['signin','home','route','stop','report','summary'].forEach(s=>{ V['scr'+s[0].toUpperCase()+s.slice(1)]=this.state.screen===s; });
+
+    // sign-in
+    V.driverBtns=drivers.map(d=>({ name:d.name, initials:d.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),
+      on:this.state.pick===d.id, bg:this.state.pick===d.id?'var(--blue-50)':'var(--paper-0)', border:this.state.pick===d.id?'1px solid var(--blue-500)':'1px solid var(--border-default)',
+      pick:()=>this.setState({pick:d.id}) }));
+    V.needsGps=!this.state.gpsOn&&(this.props.showInstructions??true);
+    V.enableGps=()=>{ this.setState({gpsOn:true}); this.toast('success','Location on','GPS logging is armed for your shift.'); };
+    const canClock=this.state.pick&&(this.state.gpsOn||!(this.props.showInstructions??true));
+    V.clockInBg=canClock?'var(--orange-500)':'var(--paper-200)'; V.clockInColor=canClock?'var(--ink-900)':'var(--gray-400)'; V.clockInCursor=canClock?'pointer':'not-allowed';
+    V.clockIn=()=>{ if(!canClock){ this.toast('warning','Hold up',this.state.pick?'Enable location first — it\'s your proof of service.':'Pick your name first.'); return; }
+      const sh=schedule.find(s=>s.date===today&&s.driverId===this.state.pick);
+      this.setState({screen:'home',clockInTs:Date.now(),gpsOn:true,truckSel:sh?sh.truckId:(trucks[0]||{}).id||'',truckId:null,miles:0,crumbs:[],pos:{x:50,y:96},sumSent:false,sum:null});
+      this.toast('success','Clocked in','Timesheet started · location recorded.'); };
+
+    // home
+    const me=drivers.find(d=>d.id===this.state.pick)||{name:''};
+    V.driverName=me.name;
+    const el=this.state.clockInTs?Math.floor((this.state.now-this.state.clockInTs)/1000):0;
+    V.elapsed=Math.floor(el/3600)+':'+P.pad(Math.floor(el/60)%60)+':'+P.pad(el%60);
+    V.clockInAt=this.state.clockInTs?this.hm(new Date(this.state.clockInTs)):'';
+    const mySh=schedule.find(s=>s.date===today&&s.driverId===this.state.pick);
+    V.truckOpts=trucks.filter(t=>t.status!=='shop').map(t=>({id:t.id,label:t.unit+' · '+t.make+(mySh&&mySh.truckId===t.id?' (assigned)':'')}));
+    V.truckSel=this.state.truckSel; V.setTruckSel=e=>this.setState({truckSel:e.target.value,truckId:null});
+    V.notCheckedIn=!this.state.truckId; V.checkedIn=!!this.state.truckId;
+    V.checkIn=()=>{ const tid=this.state.truckSel; if(!tid)return;
+      const other=schedule.find(s=>s.date===today&&s.truckId===tid&&s.driverId!==this.state.pick);
+      if(other){ const od=drivers.find(d=>d.id===other.driverId); this.toast('danger','Truck is booked',(trucks.find(t=>t.id===tid)||{}).unit+' belongs to '+(od?od.name:'another driver')+' today. No double-booking.'); return; }
+      this.setState({truckId:tid}); const t=trucks.find(x=>x.id===tid); this.toast('success','Checked into '+(t?t.unit:''),'Mileage this shift logs to this truck.'); };
+    const ckT=trucks.find(t=>t.id===(this.state.truckId||this.state.truckSel));
+    if(ckT){ const o=P.oil(ckT,S.settings.oilInterval);
+      if(o.due){ V.oilWarn=true; V.oilWarnColor='var(--red-600)'; V.oilWarnTitle=ckT.unit+' — oil change overdue'; V.oilWarnBody='It\'s '+(o.since-o.int).toLocaleString()+' mi past the '+o.int.toLocaleString()+'-mile interval. Get it to the shop after this route.'; }
+      else if(o.left<600){ V.oilWarn=true; V.oilWarnColor='var(--orange-600)'; V.oilWarnTitle=ckT.unit+' — oil change coming up'; V.oilWarnBody='Due in '+o.left.toLocaleString()+' mi (every '+o.int.toLocaleString()+' mi, per truck, any driver).'; }
+      else V.oilWarn=false;
+      V.truckMsg=ckT.unit+' · '+ckT.miles.toLocaleString()+' mi on the clock · '+ckT.mpg+' mpg';
+    } else { V.oilWarn=false; V.truckMsg=''; }
+    V.flagOil=()=>{ if(!ckT)return; this.commitRepair({id:P.uid('rp'),co:this.coId(),ts:new Date().toISOString(),item:ckT.unit+' — oil change due',truckId:ckT.id,from:this.state.pick,to:(mechanics[0]||{}).id,msg:'Odometer says we\'re due. Flagging before it becomes a problem.',photo:false,status:'open'});
+      this.toast('success','Shop notified','Oil change request sent with the odometer reading.'); };
+    const rt=this.route();
+    V.hasRoute=!!rt&&!!this.state.truckId; V.noRoute=!rt;
+    if(rt){ const done=rt.stops.filter(s=>this.stopDone(s)).length;
+      V.routeMeta=(rt.planMiles?rt.planMiles+' MI PLANNED':'OPTIMIZED');
+      V.routeHeadline=rt.stops.length+' stops';
+      V.routeSub=done?done+' done · '+(rt.stops.length-done)+' to go':'Optimized start-to-finish from your location.';
+      V.startLabel=rt.status==='assigned'?'Start route':'Resume route';
+      V.startRoute=()=>{ this.setState({screen:'route',navOn:true,paused:false,arrived:false});
+        if(!this.state.offline) P.update(s=>{ const r=s.routes.find(q=>q.id===rt.id); if(r)r.status='active'; }); };
+    } else { V.routeMeta='';V.routeHeadline='';V.routeSub='';V.startLabel='Start route';V.startRoute=()=>{}; }
+    V.goReport=()=>this.setState({screen:'report',repItem:'',repMsg:'',repPhoto:null,repTo:(mechanics[0]||{}).id||''});
+    V.endShiftEarly=()=>this.endRouteNow(true);
+
+    // route / nav
+    const ns=this.nextStop(); const nsC=ns?clientById(ns.clientId):null;
+    V.hasNext=!!nsC; V.allDone=!!rt&&!nsC;
+    V.nextName=nsC?nsC.name:''; V.nextAddr=nsC?nsC.addr:''; V.nextType=nsC?(nsC.type==='commercial'?'COMMERCIAL':'RESIDENTIAL'):'';
+    V.nextDist=nsC?(Math.hypot(nsC.x-this.state.pos.x,nsC.y-this.state.pos.y)*0.14).toFixed(1):'0';
+    V.arrived=this.state.arrived&&!!nsC; V.driving=!this.state.arrived&&!!nsC;
+    V.meX=this.state.pos.x.toFixed(1); V.meY=this.state.pos.y.toFixed(1);
+    V.gpsReadout=this.gpsNow();
+    V.milesSoFar=this.state.miles.toFixed(1);
+    if(rt){ const doneN=rt.stops.filter(s=>this.stopDone(s)).length;
+      V.stopPos=Math.min(doneN+1,rt.stops.length)+' of '+rt.stops.length;
+      V.navPts=this.state.pos.x.toFixed(1)+','+this.state.pos.y.toFixed(1)+' '+rt.stops.filter(s=>!this.stopDone(s)).map(s=>{const c=clientById(s.clientId);return c?c.x+','+c.y:'';}).filter(Boolean).join(' ');
+      V.navStops=rt.stops.map((s,i)=>{ const c=clientById(s.clientId)||{x:0,y:0}; const dn=this.stopDone(s);
+        return { n:dn?'✓':String(i+1), x:c.x, y:c.y, bg:dn?'var(--green-500)':'var(--ink-900)', fg:'var(--paper-50)' }; });
+      V.stopList=rt.stops.map((s,i)=>{ const c=clientById(s.clientId)||{}; const dn=this.stopDone(s);
+        const q=this.state.queue.find(q=>q.kind==='job'&&q.clientId===s.clientId);
+        return { name:c.name||'—', mark:dn?'✓':String(i+1), bg:dn?'var(--green-100)':'var(--paper-200)', fg:dn?'var(--green-600)':'var(--gray-500)',
+          color:dn?'var(--gray-400)':'var(--ink-900)', ts:dn?P.fmtTs(s.ts||(q?q.job.ts:''))+(q?' · queued':''):'' }; });
+    } else { V.stopPos='—'; V.navPts=''; V.navStops=[]; V.stopList=[]; }
+    V.crumbDots=this.state.crumbs.filter((c,i)=>i%4===0).map(c=>({x:c.x,y:c.y}));
+    V.paused=this.state.paused;
+    V.pauseIcon=this.state.paused?'play':'pause'; V.pauseLabel=this.state.paused?'Resume':'Pause (lunch)';
+    V.togglePause=()=>{ const p=!this.state.paused; this.setState({paused:p});
+      if(!this.state.offline&&rt) P.update(s=>{ const r=s.routes.find(q=>q.id===rt.id); if(r)r.status=p?'paused':'active'; }); };
+    V.openStop=()=>this.setState({screen:'stop',photo:null,note:'',arrivedTs:Date.now()});
+    V.endRoute=()=>this.endRouteNow(false);
+    V.backToRoute=()=>this.setState({screen:'route'});
+
+    // stop completion
+    V.arrivedAt=this.state.arrivedTs?this.hm(new Date(this.state.arrivedTs)):'';
+    V.noPhoto=!this.state.photo; V.hasPhoto=!!this.state.photo;
+    V.capture=()=>{ const d=new Date(); this.setState({photo:{ts:d.toISOString(),label:this.hm(d)+' · '+this.gpsNow()}}); };
+    V.retake=()=>this.setState({photo:null});
+    V.photoStamp=this.state.photo?(P.fmtTs(this.state.photo.ts)+' · '+this.gpsNow()+' · '+co.name):'';
+    V.noteVal=this.state.note; V.setNote=e=>this.setState({note:e.target.value});
+    V.clientEmail=nsC?nsC.email:'the client';
+    V.sendJobLabel=this.state.offline?'Save — sends when back online':'Email client + notify dispatch';
+    V.sendJob=()=>{ if(!nsC||!this.state.photo||!rt)return;
+      const p=this.state.pos;
+      const payload={ kind:'job', clientId:nsC.id, routeId:rt.id, job:{ id:P.uid('j'), co:this.coId(), clientId:nsC.id, driverId:this.state.pick, truckId:this.state.truckId,
+        ts:this.state.photo.ts, lat:+(39.79-p.y*0.0016).toFixed(4), lng:+(-105.08+p.x*0.0022).toFixed(4), photo:true, emailed:true, notified:true, note:this.state.note } };
+      if(this.state.offline){ this.setState({queue:[...this.state.queue,payload],screen:'route',arrived:false,photo:null}); this.toast('warning','Saved on phone','No signal — it syncs to '+nsC.email+' and dispatch when you\'re back in coverage.'); }
+      else { this.commitJob(payload); this.setState({screen:'route',arrived:false,photo:null}); this.toast('success','Proof sent','Photo + GPS emailed to '+nsC.email+' · dispatch notified.'); } };
+
+    // repairs
+    const myEq=equipment.filter(e=>e.truckId===(this.state.truckId||''));
+    const opts=[...myEq.map(e=>({v:e.name,label:e.name+' (on truck)'})),{v:'Truck — hydraulics',label:'Truck — hydraulic line'},{v:'Truck — plow mount',label:'Truck — plow mount'},{v:'Truck — engine / other',label:'Truck — engine / other'}];
+    V.repItemOpts=opts; V.repItemVal=this.state.repItem||opts[0].v; V.setRepItem=e=>this.setState({repItem:e.target.value});
+    V.noRepPhoto=!this.state.repPhoto; V.hasRepPhoto=!!this.state.repPhoto;
+    V.captureRep=()=>{ const d=new Date(); this.setState({repPhoto:{ts:d.toISOString()}}); };
+    V.repStamp=this.state.repPhoto?(P.fmtTs(this.state.repPhoto.ts)+' · '+this.gpsNow()):'';
+    V.repMsgVal=this.state.repMsg; V.setRepMsg=e=>this.setState({repMsg:e.target.value});
+    V.mechOpts=[...mechanics.map(m=>({id:m.id,name:m.name+' (mechanic)'})),{id:'dispatch',name:'Dispatch / management'}];
+    V.repToVal=this.state.repTo||(mechanics[0]||{id:'dispatch'}).id; V.setRepTo=e=>this.setState({repTo:e.target.value});
+    V.sendRepLabel=this.state.offline?'Save — sends when back online':'Send repair request';
+    V.sendRepair=()=>{ if(!this.state.repPhoto){ this.toast('warning','Add a photo','A picture of the damage saves the shop a trip.'); return; }
+      const rep={ id:P.uid('rp'), co:this.coId(), ts:this.state.repPhoto.ts, item:this.state.repItem||opts[0].v, truckId:this.state.truckId||this.state.truckSel,
+        from:this.state.pick, to:this.state.repTo||(mechanics[0]||{}).id, msg:this.state.repMsg||'Needs a look.', photo:true, status:'open' };
+      if(this.state.offline){ this.setState({queue:[...this.state.queue,{kind:'repair',rep}],screen:'home'}); this.toast('warning','Saved on phone','Repair request queues until you\'re back in coverage.'); }
+      else { this.commitRepair(rep); this.setState({screen:'home'}); const to=this.state.repTo==='dispatch'?'dispatch':(mechanics.find(m=>m.id===(this.state.repTo||(mechanics[0]||{}).id))||{}).name; this.toast('success','Repair reported','Photo + note sent to '+(to||'the shop')+'.'); } };
+    V.backHome=()=>this.setState({screen:'home'});
+
+    // summary
+    const sum=this.state.sum||{};
+    V.sumHours=sum.hours||'0'; V.sumMiles=sum.miles!=null?String(sum.miles):'0'; V.sumFuel=sum.fuel||'$0'; V.sumInOut=(sum.inAt||'')+' – '+(sum.outAt||'');
+    V.sumStops=(sum.stops||[]);
+    V.notSentTs=!this.state.sumSent; V.sentTs=this.state.sumSent;
+    V.sendTimesheet=()=>{ const s0=this.state.sum; if(!s0)return;
+      P.update(s=>{ s.timesheets.push({id:P.uid('ts'),co:this.coId(),driverId:this.state.pick,truckId:s0.truckId,date:today,clockIn:s0.in24,clockOut:s0.out24,miles:s0.miles,stops:s0.stops.length}); });
+      this.setState({sumSent:true}); this.toast('success','Timesheet sent','Hours, miles and every serviced address are on the admin panel.'); };
+    V.clockOut=()=>this.setState({screen:'signin',pick:null,clockInTs:null,truckId:null,navOn:false,paused:false,miles:0,crumbs:[],sum:null,sumSent:false,arrived:false});
+
+    // toast
+    V.toastOn=!!this.state.toast; const to2=this.state.toast||{};
+    V.toastVariant=to2.variant||'info'; V.toastTitle=to2.title||''; V.toastDetail=to2.detail||'';
+    V.dismissToast=()=>this.setState({toast:null});
+    return V;
+  }
+
+  endRouteNow(early){
+    const P=PlowStore, today=P.today(0);
+    const rt=this.route();
+    const inD=new Date(this.state.clockInTs||Date.now()), outD=new Date();
+    const miles=Math.round(this.state.miles*10)/10;
+    const t=this.ent('trucks').find(x=>x.id===this.state.truckId);
+    const gas=P.get().settings.gasPrice;
+    const doneStops=rt?rt.stops.filter(s=>this.stopDone(s)):[];
+    const clients=this.ent('clients');
+    const sum={ hours:P.hours(this.hm24(inD),this.hm24(outD)).toFixed(1), in24:this.hm24(inD), out24:this.hm24(outD), inAt:this.hm(inD), outAt:this.hm(outD),
+      miles, fuel:'$'+P.fuel(miles,t?t.mpg:10,gas).cost.toFixed(2), truckId:this.state.truckId,
+      stops:doneStops.map(s=>{ const c=clients.find(c=>c.id===s.clientId)||{}; const q=this.state.queue.find(q=>q.kind==='job'&&q.clientId===s.clientId);
+        return { addr:c.addr||'—', ts:P.fmtTs(s.ts||(q?q.job.ts:''))+(q?' · queued':'') }; }) };
+    if(!this.state.offline) P.update(s=>{
+      if(rt){ const r=s.routes.find(q=>q.id===rt.id); if(r){ r.status='complete'; r.miles=miles; r.pos=null; } }
+      if(this.state.truckId){ const tk=s.trucks.find(q=>q.id===this.state.truckId); if(tk) tk.miles+=Math.round(miles); }
+    });
+    this.setState({screen:'summary',navOn:false,paused:false,sum,arrived:false});
+    if(early&&!rt) this.setState({sum:{...sum,stops:[]}});
+  }
+}
+</script>
+</body>
+</html>
