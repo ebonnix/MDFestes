@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { int, longblob, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -69,3 +69,26 @@ export const serviceCategories = mysqlTable("service_categories", {
 
 export type ServiceCategory = typeof serviceCategories.$inferSelect;
 export type InsertServiceCategory = typeof serviceCategories.$inferInsert;
+
+// Binary object storage kept in the database itself (no external S3/AWS needed).
+// storagePut() inserts here; the /mdf-storage/* proxy streams the bytes back.
+export const storageObjects = mysqlTable("storage_objects", {
+  id: int("id").autoincrement().primaryKey(),
+  key: varchar("key", { length: 512 }).notNull().unique(),
+  data: longblob("data").notNull(),
+  contentType: varchar("contentType", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type StorageObject = typeof storageObjects.$inferSelect;
+export type InsertStorageObject = typeof storageObjects.$inferInsert;
+
+// Simple key/value store for editable site settings (e.g. social page URLs).
+export const siteSettings = mysqlTable("site_settings", {
+  settingKey: varchar("settingKey", { length: 100 }).primaryKey(),
+  settingValue: text("settingValue"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SiteSetting = typeof siteSettings.$inferSelect;
+export type InsertSiteSetting = typeof siteSettings.$inferInsert;

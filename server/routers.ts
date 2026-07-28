@@ -3,7 +3,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
-import { getPublicReviews, getAllReviews, createReview, deleteReview, createContactSubmission, getServiceImages, getAllServiceImages, addServiceImage, deleteServiceImage, setPrimaryServiceImage, getServiceCategories, getServiceCategoriesByType, createServiceCategory, updateServiceCategory, deleteServiceCategory, seedBuiltInCategories } from "./db";
+import { getPublicReviews, getAllReviews, createReview, deleteReview, createContactSubmission, getServiceImages, getAllServiceImages, addServiceImage, deleteServiceImage, setPrimaryServiceImage, getServiceCategories, getServiceCategoriesByType, createServiceCategory, updateServiceCategory, deleteServiceCategory, seedBuiltInCategories, getPublicSettings, setSetting } from "./db";
 import { CONSTRUCTION_SERVICES, PLOWING_SERVICES } from "@shared/services";
 
 // Seed built-in categories on first server start
@@ -337,6 +337,38 @@ export const appRouter = router({
           throw new Error("Invalid admin password");
         }
         await deleteServiceCategory(input.id);
+        return { success: true };
+      }),
+  }),
+
+  // --- Site Settings (social page links shown on the homepage) ---
+  settings: router({
+    // Public: current social links for the site to render
+    getPublic: publicProcedure.query(async () => {
+      const s = await getPublicSettings();
+      return {
+        facebookUrl: s.facebookUrl || "",
+        instagramUrl: s.instagramUrl || "",
+      };
+    }),
+
+    // Admin: update the social links
+    update: publicProcedure
+      .input(z.object({
+        password: z.string(),
+        facebookUrl: z.string().max(500).optional(),
+        instagramUrl: z.string().max(500).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        if (input.password !== ADMIN_PASSWORD) {
+          throw new Error("Invalid admin password");
+        }
+        if (input.facebookUrl !== undefined) {
+          await setSetting("facebookUrl", input.facebookUrl.trim());
+        }
+        if (input.instagramUrl !== undefined) {
+          await setSetting("instagramUrl", input.instagramUrl.trim());
+        }
         return { success: true };
       }),
   }),

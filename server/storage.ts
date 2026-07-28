@@ -1,30 +1,12 @@
 /**
- * Storage helpers using AWS S3 directly.
- * Uploads via PutObject, downloads via presigned GET URL.
- * Requires AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET, S3_REGION env vars.
+ * Storage helpers backed by the application database (no external S3/AWS).
+ * Uploaded bytes are stored in the `storage_objects` table and streamed back
+ * out through the /mdf-storage/* proxy. This keeps everything on Railway with
+ * no extra services or credentials to configure.
  */
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-
-function getS3Config() {
-  const bucket = process.env.S3_BUCKET;
-  const region = process.env.S3_REGION || "us-east-1";
-  if (!bucket) {
-    throw new Error(
-      "Storage config missing: set S3_BUCKET (and optionally S3_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)"
-    );
-  }
-  return { bucket, region };
-}
-
-let _s3Client: S3Client | null = null;
-function getS3Client(): S3Client {
-  if (!_s3Client) {
-    const { region } = getS3Config();
-    _s3Client = new S3Client({ region });
-  }
-  return _s3Client;
-}
+import { eq } from "drizzle-orm";
+import { getDb } from "./db";
+import { storageObjects } from "../drizzle/schema";
 
 function normalizeKey(relKey: string): string {
   return relKey.replace(/^\/+/, "");
@@ -37,39 +19,51 @@ function appendHashSuffix(relKey: string): string {
   return `${relKey.slice(0, lastDot)}_${hash}${relKey.slice(lastDot)}`;
 }
 
+function toBuffer(data: Buffer | Uint8Array | string): Buffer {
+  if (Buffer.isBuffer(data)) return data;
+  if (typeof data === "string") return Buffer.from(data);
+  return Buffer.from(data);
+}
+
 export async function storagePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
-  const { bucket } = getS3Config();
-  const client = getS3Client();
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Storage unavailable: database (DATABASE_URL) is not configured");
+  }
   const key = appendHashSuffix(normalizeKey(relKey));
+  const body = toBuffer(data);
 
-  const body = typeof data === "string" ? Buffer.from(data) : data;
+  // Cap at ~16MB to stay within typical MySQL max_allowed_packet limits.
+  if (body.length > 16 * 1024 * 1024) {
+    throw new Error("File too large: images must be 16MB or smaller");
+  }
 
-  await client.send(
-    new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: body,
-      ContentType: contentType,
-    })
-  );
+  await db.insert(storageObjects).values({ key, data: body, contentType });
 
   return { key, url: `/mdf-storage/${key}` };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
+/**
+ * Fetch a stored object's bytes + content type by key. Returns null if the
+ * database is unavailable or the key does not exist.
+ */
+export async function storageGetObject(
+  relKey: string
+): Promise<{ data: Buffer; contentType: string } | null> {
+  const db = await getDb();
+  if (!db) return null;
   const key = normalizeKey(relKey);
-  return { key, url: `/mdf-storage/${key}` };
-}
-
-export async function storageGetSignedUrl(relKey: string): Promise<string> {
-  const { bucket } = getS3Config();
-  const client = getS3Client();
-  const key = normalizeKey(relKey);
-  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
-  const url = await getSignedUrl(client, command, { expiresIn: 3600 });
-  return url;
+  const rows = await db
+    .select()
+    .from(storageObjects)
+    .where(eq(storageObjects.key, key))
+    .limit(1);
+  if (rows.length === 0) return null;
+  const row = rows[0];
+  const data = Buffer.isBuffer(row.data) ? row.data : Buffer.from(row.data as Uint8Array);
+  return { data, contentType: row.contentType || "application/octet-stream" };
 }
