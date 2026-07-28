@@ -54,10 +54,14 @@ export const appRouter = router({
           service: input.service || null,
           isPrePopulated: 0,
         });
-        await notifyOwner({
-          title: "New Review Submitted",
-          content: `${input.name} left a ${input.rating}-star review: "${input.text.substring(0, 100)}..."`,
-        });
+        try {
+          await notifyOwner({
+            title: "New Review Submitted",
+            content: `${input.name} left a ${input.rating}-star review: "${input.text.substring(0, 100)}..."`,
+          });
+        } catch (err) {
+          console.warn("[reviews.submit] owner notification failed (non-fatal):", err);
+        }
         return { success: true };
       }),
 
@@ -129,10 +133,14 @@ export const appRouter = router({
           photoUrl: input.photoUrl || null,
           photoKey: input.photoKey || null,
         });
-        await notifyOwner({
-          title: "New Bid Request Submitted",
-          content: `From: ${input.name} (${input.email})\nPhone: ${input.phone || "N/A"}\nService: ${input.service || "N/A"}\nAddress: ${input.address || "N/A"}\nPhoto: ${input.photoUrl ? "Yes" : "No"}\n\nMessage: ${input.message.substring(0, 200)}`,
-        });
+        try {
+          await notifyOwner({
+            title: "New Bid Request Submitted",
+            content: `From: ${input.name} (${input.email})\nPhone: ${input.phone || "N/A"}\nService: ${input.service || "N/A"}\nAddress: ${input.address || "N/A"}\nPhoto: ${input.photoUrl ? "Yes" : "No"}\n\nMessage: ${input.message.substring(0, 200)}`,
+          });
+        } catch (err) {
+          console.warn("[contact.submit] owner notification failed (non-fatal):", err);
+        }
         return { success: true };
       }),
 

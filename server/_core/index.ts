@@ -8,6 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { healthCheck } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -36,6 +37,41 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+
+  // Admin-gated diagnostics: GET /api/health?key=<ADMIN_PASSWORD>
+  // Reports DB connectivity and which env vars are configured so the live
+  // Railway deploy can be checked without exposing secret values.
+  app.get("/api/health", async (req, res) => {
+    const adminPassword = process.env.ADMIN_PASSWORD || "9708895771";
+    if ((req.query.key as string) !== adminPassword) {
+      res.status(401).json({ ok: false, error: "unauthorized" });
+      return;
+    }
+    try {
+      const db = await healthCheck();
+      res.json({
+        ok: db.reviewsTableOk,
+        database: db,
+        storage: {
+          s3BucketSet: !!process.env.S3_BUCKET,
+          s3RegionSet: !!process.env.S3_REGION,
+          awsAccessKeySet: !!process.env.AWS_ACCESS_KEY_ID,
+          awsSecretKeySet: !!process.env.AWS_SECRET_ACCESS_KEY,
+        },
+        notifications: {
+          forgeApiUrlSet: !!process.env.BUILT_IN_FORGE_API_URL,
+          forgeApiKeySet: !!process.env.BUILT_IN_FORGE_API_KEY,
+        },
+        env: {
+          nodeEnv: process.env.NODE_ENV || null,
+          adminPasswordSet: !!process.env.ADMIN_PASSWORD,
+        },
+      });
+    } catch (e) {
+      res.status(500).json({ ok: false, error: e instanceof Error ? e.message : String(e) });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

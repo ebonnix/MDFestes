@@ -17,6 +17,34 @@ export async function getDb() {
   return _db;
 }
 
+/**
+ * Lightweight diagnostics for the /api/health endpoint. Verifies that a
+ * DATABASE_URL is present and that a trivial query against the `reviews`
+ * table succeeds (i.e. the schema/migrations are in place). Never throws.
+ */
+export async function healthCheck(): Promise<{
+  databaseUrlSet: boolean;
+  dbConnected: boolean;
+  reviewsTableOk: boolean;
+  error: string | null;
+}> {
+  const databaseUrlSet = !!process.env.DATABASE_URL;
+  let dbConnected = false;
+  let reviewsTableOk = false;
+  let error: string | null = null;
+  try {
+    const db = await getDb();
+    if (db) {
+      dbConnected = true;
+      await db.select().from(reviews).limit(1);
+      reviewsTableOk = true;
+    }
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+  }
+  return { databaseUrlSet, dbConnected, reviewsTableOk, error };
+}
+
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) {
     throw new Error("User openId is required for upsert");
