@@ -1,4 +1,12 @@
-import { int, longblob, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { customType, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+
+// Large binary column. Defined via customType because some drizzle-orm builds
+// don't export a `longblob` helper; dataType() emits the raw MySQL type.
+const longblob = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return "longblob";
+  },
+});
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
