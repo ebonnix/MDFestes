@@ -32,6 +32,18 @@ export default function PlowDriver() {
   const ping = trpc.plow.tracking.ping.useMutation();
   const submitProof = trpc.plow.proofs.submit.useMutation();
   const resendProof = trpc.plow.proofs.resend.useMutation();
+  const deleteProof = trpc.plow.proofs.delete.useMutation({ onSuccess: refresh });
+
+  async function deleteAndRetake(stop: Stop, proof: Stop["proofs"][number]) {
+    if (!confirm(`Delete this ${proof.kind} photo and take a new one?`)) return;
+    try {
+      await deleteProof.mutateAsync({ proofId: proof.id });
+      toast("Photo deleted — take the replacement");
+      takePhoto(stop, proof.kind);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : String(e));
+    }
+  }
 
   // ---- Location: permission + live tracking ----
   const [perm, setPerm] = useState<"granted" | "denied" | "prompt" | "unknown">("unknown");
@@ -348,10 +360,23 @@ export default function PlowDriver() {
                         {(beforeProofs.length > 0 || afterProofs.length > 0) && (
                           <div className="flex gap-2 mt-2">
                             {[...beforeProofs, ...afterProofs].map(pr => (
-                              <a key={pr.id} href={pr.photoUrl} target="_blank" rel="noreferrer" className="relative">
-                                <img src={pr.photoUrl} alt={pr.kind} className="w-16 h-16 object-cover rounded" />
+                              <div key={pr.id} className="relative">
+                                <a href={pr.photoUrl} target="_blank" rel="noreferrer">
+                                  <img src={pr.photoUrl} alt={pr.kind} className="w-16 h-16 object-cover rounded" />
+                                </a>
                                 <span className="p-pill absolute bottom-0 left-0" style={{ fontSize: 9 }}>{pr.kind}</span>
-                              </a>
+                                <button
+                                  type="button"
+                                  aria-label={`Delete ${pr.kind} photo and retake`}
+                                  title="Delete and retake"
+                                  disabled={deleteProof.isPending}
+                                  onClick={() => deleteAndRetake(s, pr)}
+                                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                                  style={{ background: "var(--p-red)", color: "#fff", border: "2px solid var(--p-ink-800)", lineHeight: 1 }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
                             ))}
                           </div>
                         )}
