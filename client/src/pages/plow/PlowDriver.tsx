@@ -225,6 +225,7 @@ export default function PlowDriver() {
   const [completing, setCompleting] = useState<Stop | null>(null);
   const [skipping, setSkipping] = useState<Stop | null>(null);
   const [sending, setSending] = useState<Stop | null>(null);
+  const [showHours, setShowHours] = useState(false);
 
   // ---- tiny toast ----
   const [msg, setMsg] = useState<string | null>(null);
@@ -255,7 +256,7 @@ export default function PlowDriver() {
   }
 
   return (
-    <PlowShell title="My route" right={<><span className="text-sm hidden sm:inline" style={{ color: "var(--p-gray-400)" }}>{me.data.name}</span><LogoutButton /></>}>
+    <PlowShell title="My route" right={<><span className="text-sm hidden sm:inline" style={{ color: "var(--p-gray-400)" }}>{me.data.name}</span><button className="p-btn p-btn-ghost p-btn-sm text-white" onClick={() => setShowHours(true)}>⏱ My hours</button><LogoutButton /></>}>
       <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
 
       <main className="max-w-2xl mx-auto px-4 py-4 pb-28 space-y-4">
@@ -299,6 +300,8 @@ export default function PlowDriver() {
             <div className="text-2xl p-mono">{doneCount}<span style={{ color: "var(--p-gray-400)" }}>/{stops.length}</span></div>
           </div>
         </div>
+
+        <TodayTally stops={stops} routeStartedAt={route.data?.route?.startedAt ?? null} onOpen={() => setShowHours(true)} />
 
         {route.isLoading && <div className="flex justify-center py-10"><Spinner /></div>}
 
@@ -462,6 +465,8 @@ export default function PlowDriver() {
           </div>
         </Modal>
       )}
+
+      {showHours && <HoursDialog onClose={() => setShowHours(false)} />}
 
       {completing && (
         <CompleteDialog
@@ -650,6 +655,100 @@ function SendProofDialog({ stop, busy, onClose, onSend }: { stop: Stop; busy: bo
           {busy ? <Spinner /> : `Send ${channels.length === 2 ? "both" : channels[0] === "sms" ? "text" : "email"}`}
         </button>
       </div>
+    </Modal>
+  );
+}
+
+function fmtHM(m: number | null | undefined) {
+  if (m == null) return "—";
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  return h ? `${h}h ${String(mm).padStart(2, "0")}m` : `${mm}m`;
+}
+function fmtDec(m: number) {
+  return (Math.round((m / 60) * 100) / 100).toFixed(2);
+}
+
+/** Live "time on route today" card: first activity → last proof (or now while still working). */
+function TodayTally({ stops, routeStartedAt, onOpen }: { stops: Stop[]; routeStartedAt: Date | null; onOpen: () => void }) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => tick(t => t + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
+  const times: number[] = [];
+  if (routeStartedAt) times.push(new Date(routeStartedAt).getTime());
+  stops.forEach(s => {
+    if (s.arrivedAt) times.push(new Date(s.arrivedAt).getTime());
+    s.proofs.forEach(p => times.push(new Date(p.capturedAt).getTime()));
+  });
+  if (!times.length) return null;
+  const start = Math.min(...times);
+  const proofs = stops.flatMap(s => s.proofs.map(p => new Date(p.capturedAt).getTime()));
+  const lastProof = proofs.length ? Math.max(...proofs) : null;
+  const allDone = stops.length > 0 && stops.every(s => s.status === "done" || s.status === "skipped");
+  const end = allDone && lastProof ? lastProof : Date.now();
+  const minutes = Math.max(0, Math.round((end - start) / 60000));
+  return (
+    <button className="p-card w-full text-left flex items-center gap-3" onClick={onOpen} style={{ cursor: "pointer" }}>
+      <span className="text-2xl">⏱</span>
+      <div className="flex-1">
+        <div className="p-label">Time on route today {allDone ? "" : "· running"}</div>
+        <div className="text-xl p-mono">{fmtHM(minutes)} <span className="text-sm" style={{ color: "var(--p-gray-400)" }}>({fmtDec(minutes)} hrs)</span></div>
+      </div>
+      <span className="text-sm" style={{ color: "var(--p-gray-400)" }}>All hours ›</span>
+    </button>
+  );
+}
+
+function HoursDialog({ onClose }: { onClose: () => void }) {
+  const [from, setFrom] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 13); return d.toISOString().slice(0, 10); });
+  const [to, setTo] = useState(todayDenver());
+  const q = trpc.plow.analytics.mine.useQuery({ from, to });
+  const days = q.data?.days ?? [];
+  const total = q.data?.totalMinutes ?? 0;
+  return (
+    <Modal onClose={onClose}>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="p-label">Time card</div>
+          <h3 className="text-lg">My plowing hours</h3>
+        </div>
+        <button className="p-btn p-btn-ghost p-btn-sm" onClick={onClose}>✕</button>
+      </div>
+      <div className="grid grid-cols-2 gap-2 mt-3">
+        <label className="block"><span className="p-label block mb-1">From</span><input className="p-input" type="date" value={from} onChange={e => setFrom(e.target.value)} /></label>
+        <label className="block"><span className="p-label block mb-1">To</span><input className="p-input" type="date" value={to} onChange={e => setTo(e.target.value)} /></label>
+      </div>
+      <div className="flex gap-2 mt-2">
+        {[["This week", 6], ["2 weeks", 13], ["Month", 30]].map(([l, n]) => (
+          <button key={l} className="p-btn p-btn-ghost p-btn-sm" onClick={() => { const d = new Date(); d.setDate(d.getDate() - Number(n)); setFrom(d.toISOString().slice(0, 10)); setTo(todayDenver()); }}>{l}</button>
+        ))}
+      </div>
+
+      <div className="p-card mt-3 text-center" style={{ borderColor: "var(--p-orange)" }}>
+        <div className="p-label">Total for period</div>
+        <div className="text-3xl p-mono">{fmtHM(total)}</div>
+        <div className="text-sm" style={{ color: "var(--p-gray-400)" }}>{fmtDec(total)} hours · {q.data?.stopsDone ?? 0} stops completed</div>
+      </div>
+
+      {q.isLoading && <div className="flex justify-center py-4"><Spinner /></div>}
+      <table className="p-table mt-3" style={{ minWidth: 0 }}>
+        <thead><tr><th>Date</th><th>Start</th><th>Last proof</th><th>Stops</th><th style={{ textAlign: "right" }}>Hours</th></tr></thead>
+        <tbody>
+          {days.map(d => (
+            <tr key={d.routeId}>
+              <td className="p-mono text-xs">{d.date.slice(5)}</td>
+              <td>{fmtTime(d.startedAt)}</td>
+              <td>{fmtTime(d.lastProofAt)}</td>
+              <td>{d.done}{d.skipped ? ` (+${d.skipped})` : ""}</td>
+              <td className="p-mono" style={{ textAlign: "right" }}>{d.minutes != null ? fmtDec(d.minutes) : "—"}</td>
+            </tr>
+          ))}
+          {!q.isLoading && !days.length && <tr><td colSpan={5} className="text-center py-4" style={{ color: "var(--p-gray-400)" }}>No routes in this range.</td></tr>}
+        </tbody>
+      </table>
+      <p className="text-xs mt-3" style={{ color: "var(--p-gray-400)" }}>Each day runs from your first activity (Start route, first "I'm here", or first photo) to your last proof photo. Hours are shown in decimal for time cards (1.50 = 1h 30m).</p>
     </Modal>
   );
 }

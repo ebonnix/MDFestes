@@ -6,7 +6,7 @@ import { Field } from "./PlowLogin";
 import { fmtDistance } from "@/plow/geo";
 import { DirectionsPanel, useInAppDirections } from "@/plow/DirectionsPanel";
 
-type Tab = "dispatch" | "properties" | "drivers" | "proofs" | "settings";
+type Tab = "dispatch" | "properties" | "drivers" | "proofs" | "analytics" | "settings";
 
 export default function PlowAdmin() {
   const me = usePlowGuard("admin");
@@ -30,6 +30,7 @@ export default function PlowAdmin() {
               ["properties", "Properties"],
               ["drivers", "Drivers"],
               ["proofs", "Proof log"],
+              ["analytics", "Analytics"],
               ["settings", "Status"],
             ] as [Tab, string][]
           ).map(([id, label]) => (
@@ -42,6 +43,7 @@ export default function PlowAdmin() {
         {tab === "properties" && <Properties />}
         {tab === "drivers" && <Drivers />}
         {tab === "proofs" && <ProofLog />}
+        {tab === "analytics" && <Analytics />}
         {tab === "settings" && <Status />}
       </main>
     </PlowShell>
@@ -101,10 +103,10 @@ function Dispatch() {
   }
 
   return (
-    <div className="grid lg:grid-cols-[1fr_1.1fr] gap-5">
-      <div className="space-y-4">
+    <div className="grid lg:grid-cols-[1fr_1.1fr] gap-4 lg:gap-5 min-w-0">
+      <div className="space-y-4 min-w-0">
         <div className="p-card">
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-end gap-3">
             <Field label="Service date">
               <input className="p-input" type="date" value={date} onChange={e => setDate(e.target.value)} />
             </Field>
@@ -116,7 +118,7 @@ function Dispatch() {
                 ))}
               </select>
             </Field>
-            <button className="p-btn p-btn-primary" disabled={!driverId || !selected.size || addStops.isPending} onClick={assignSelected}>
+            <button className="p-btn p-btn-primary col-span-2" disabled={!driverId || !selected.size || addStops.isPending} onClick={assignSelected}>
               {addStops.isPending ? <Spinner /> : `Assign ${selected.size || ""} selected`}
             </button>
           </div>
@@ -135,9 +137,9 @@ function Dispatch() {
         </div>
 
         <div className="p-card">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
             <div className="p-label">Unassigned properties ({unassigned.length})</div>
-            <input className="p-input" style={{ width: 180, padding: "6px 10px" }} placeholder="Search…" value={filter} onChange={e => setFilter(e.target.value)} />
+            <input className="p-input" style={{ maxWidth: 180, padding: "6px 10px" }} placeholder="Search…" value={filter} onChange={e => setFilter(e.target.value)} />
           </div>
           <div className="flex gap-2 mb-2">
             <button className="p-btn p-btn-ghost p-btn-sm" onClick={() => setSelected(new Set(unassigned.map(p => p.id)))}>Select all</button>
@@ -172,8 +174,8 @@ function Dispatch() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="p-card p-0 overflow-hidden" style={{ padding: 0, height: nav.target ? 420 : 320 }}>
+      <div className="space-y-4 min-w-0">
+        <div className={`p-card overflow-hidden p-map-box ${nav.target ? "tall" : ""}`} style={{ padding: 0 }}>
           <PlowMap markers={markers} fitKey={date} directions={nav.directions} onDirections={nav.onDirections} />
         </div>
         <DirectionsPanel nav={nav} />
@@ -182,8 +184,8 @@ function Dispatch() {
 
         {(routes.data ?? []).map(r => (
           <div key={r.id} className="p-card">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <div className="min-w-0">
                 <div className="p-label">Route · {driverName(r.driverId)}</div>
                 <div className="text-sm flex items-center gap-2">
                   <span className={`p-pill ${r.status === "active" ? "p-pill-orange" : r.status === "done" ? "p-pill-green" : ""}`}>{r.status}</span>
@@ -205,14 +207,14 @@ function Dispatch() {
               {r.stops.map((s, i) => {
                 const p = propById.get(s.propertyId);
                 return (
-                  <li key={s.id} className="flex items-center gap-2 text-sm py-1">
+                  <li key={s.id} className="flex flex-wrap items-center gap-2 text-sm py-2" style={{ borderBottom: "1px solid var(--p-ink-700)" }}>
                     <span className={`p-stop-num ${s.status}`} style={{ width: 26, height: 26, fontSize: 12 }}>{i + 1}</span>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0" style={{ minWidth: 140 }}>
                       <div className="font-semibold truncate">{p?.ownerName ?? "?"}</div>
                       <div className="text-xs truncate" style={{ color: "var(--p-gray-400)" }}>{p?.address}</div>
                     </div>
                     <span className="p-pill">{s.status.replace("_", " ")}</span>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 ml-auto sm:ml-0">
                       <button
                         className={`p-btn p-btn-sm ${nav.target?.address === p?.address ? "p-btn-blue" : "p-btn-ghost"}`}
                         disabled={p?.lat == null}
@@ -506,6 +508,108 @@ function ProofLog() {
         ))}
       </div>
       {!proofs.isLoading && !proofs.data?.length && <p className="text-sm" style={{ color: "var(--p-gray-400)" }}>No proofs in this range.</p>}
+    </div>
+  );
+}
+
+// ============================================================== Analytics
+function fmtMinutes(m: number | null | undefined) {
+  if (m == null) return "—";
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  return h ? `${h}h ${mm}m` : `${mm}m`;
+}
+
+function Analytics() {
+  const [from, setFrom] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().slice(0, 10); });
+  const [to, setTo] = useState(todayDenver());
+  const q = trpc.plow.analytics.drivers.useQuery({ from, to });
+  const drivers = q.data?.drivers ?? [];
+  const days = q.data?.days ?? [];
+  const totals = {
+    stops: drivers.reduce((a, d) => a + d.stops, 0),
+    done: drivers.reduce((a, d) => a + d.done, 0),
+    minutes: drivers.reduce((a, d) => a + d.minutes, 0),
+    photos: drivers.reduce((a, d) => a + d.photos, 0),
+  };
+  const maxDone = Math.max(1, ...drivers.map(d => d.done));
+
+  return (
+    <div className="space-y-4">
+      <div className="p-card flex flex-wrap items-end gap-3">
+        <Field label="From"><input className="p-input" type="date" value={from} onChange={e => setFrom(e.target.value)} /></Field>
+        <Field label="To"><input className="p-input" type="date" value={to} onChange={e => setTo(e.target.value)} /></Field>
+        <div className="flex gap-2">
+          {[["Today", 0], ["7 days", 7], ["30 days", 30], ["Season", 180]].map(([l, n]) => (
+            <button key={l} className="p-btn p-btn-ghost p-btn-sm" onClick={() => { const d = new Date(); d.setDate(d.getDate() - Number(n)); setFrom(d.toISOString().slice(0, 10)); setTo(todayDenver()); }}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[["Stops completed", `${totals.done}/${totals.stops}`], ["Time on route", fmtMinutes(totals.minutes)], ["Min per stop", totals.done ? `${Math.round((totals.minutes / totals.done) * 10) / 10}` : "—"], ["Proof photos", String(totals.photos)]].map(([k, v]) => (
+          <div key={k} className="p-card">
+            <div className="p-label">{k}</div>
+            <div className="text-2xl p-mono mt-1">{v}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="p-card overflow-x-auto" style={{ padding: 0 }}>
+        <div className="p-label px-3 pt-3">By driver</div>
+        <table className="p-table">
+          <thead>
+            <tr><th>Driver</th><th>Days</th><th>Stops</th><th>Done</th><th>Skipped</th><th>Time on route</th><th>Min / stop</th><th>Photos</th><th>Material</th></tr>
+          </thead>
+          <tbody>
+            {drivers.map(d => (
+              <tr key={d.driverId}>
+                <td className="font-semibold">
+                  {d.driverName}
+                  <div className="mt-1 h-1.5 rounded" style={{ background: "var(--p-ink-700)", width: 140 }}>
+                    <div className="h-1.5 rounded" style={{ width: `${(d.done / maxDone) * 100}%`, background: "var(--p-orange)" }} />
+                  </div>
+                </td>
+                <td>{d.routeDays}</td>
+                <td>{d.stops}</td>
+                <td style={{ color: "var(--p-green)" }}>{d.done}</td>
+                <td>{d.skipped || "—"}</td>
+                <td className="p-mono">{fmtMinutes(d.minutes)}</td>
+                <td className="p-mono">{d.minutesPerStop ?? "—"}</td>
+                <td>{d.photos}</td>
+                <td>{d.material ? `${d.material} lbs` : "—"}</td>
+              </tr>
+            ))}
+            {!q.isLoading && !drivers.length && <tr><td colSpan={9} className="text-center py-6" style={{ color: "var(--p-gray-400)" }}>No routes in this range.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="p-card overflow-x-auto" style={{ padding: 0 }}>
+        <div className="p-label px-3 pt-3">By day</div>
+        <table className="p-table">
+          <thead>
+            <tr><th>Date</th><th>Driver</th><th>Status</th><th>Stops</th><th>Done</th><th>First activity</th><th>Last proof</th><th>Time on route</th><th>Min / stop</th></tr>
+          </thead>
+          <tbody>
+            {days.map(d => (
+              <tr key={d.routeId}>
+                <td className="p-mono">{d.date}</td>
+                <td className="font-semibold">{d.driverName}</td>
+                <td><span className={`p-pill ${d.status === "active" ? "p-pill-orange" : d.status === "done" ? "p-pill-green" : ""}`}>{d.status}</span></td>
+                <td>{d.stops}</td>
+                <td>{d.done}{d.skipped ? <span style={{ color: "var(--p-gray-400)" }}> (+{d.skipped} skipped)</span> : null}</td>
+                <td>{fmtTime(d.startedAt)}</td>
+                <td>{fmtTime(d.lastProofAt)}</td>
+                <td className="p-mono">{fmtMinutes(d.minutes)}</td>
+                <td className="p-mono">{d.minutesPerStop ?? "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {q.isLoading && <div className="p-4"><Spinner /></div>}
+      </div>
+      <p className="text-xs" style={{ color: "var(--p-gray-400)" }}>Time on route runs from the driver's first activity on the day (Start route, first "I'm here", or first photo — whichever came first) to their last proof photo.</p>
     </div>
   );
 }
