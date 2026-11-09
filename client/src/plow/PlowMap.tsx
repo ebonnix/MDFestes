@@ -16,11 +16,18 @@ export type MapMarker = {
   onClick?: () => void;
 };
 
+export type LatLng = { lat: number; lng: number };
+export type DirectionsStep = { text: string; distanceM: number };
+export type DirectionsInfo = { distanceM: number; durationS: number; steps: DirectionsStep[]; provider: "google" | "osrm" };
+
 type Props = {
   markers: MapMarker[];
-  path?: Array<{ lat: number; lng: number }>;
+  path?: LatLng[];
   className?: string;
   fitKey?: string; // change to re-fit bounds
+  /** When set, draws driving directions from → to and reports the turn list via onDirections. */
+  directions?: { from: LatLng; to: LatLng } | null;
+  onDirections?: (info: DirectionsInfo | null, error?: string) => void;
 };
 
 const GKEY = (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
@@ -60,9 +67,11 @@ function loadLeaflet(): Promise<any> {
 
 const COLORS: Record<MapMarker["kind"], string> = { stop: "#FF5C1C", done: "#1E9E5A", truck: "#1E62E0", me: "#FFC400" };
 
-export default function PlowMap({ markers, path, className, fitKey }: Props) {
+export default function PlowMap({ markers, path, className, fitKey, directions, onDirections }: Props) {
   const el = useRef<HTMLDivElement>(null);
-  const state = useRef<{ map?: any; layers: any[]; L?: any; kind?: "g" | "l" }>({ layers: [] });
+  const state = useRef<{ map?: any; layers: any[]; L?: any; kind?: "g" | "l"; dirLayers: any[]; dirRenderer?: any }>({ layers: [], dirLayers: [] });
+  const onDirRef = useRef(onDirections);
+  onDirRef.current = onDirections;
 
   // init
   useEffect(() => {
@@ -110,7 +119,7 @@ export default function PlowMap({ markers, path, className, fitKey }: Props) {
     return () => {
       cancelled = true;
       if (state.current.kind === "l" && state.current.map) state.current.map.remove();
-      state.current = { layers: [] };
+      state.current = { layers: [], dirLayers: [] };
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -181,5 +190,100 @@ export default function PlowMap({ markers, path, className, fitKey }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => render(), [markers, path, fitKey]);
 
+  // ---- Driving directions overlay ----
+  useEffect(() => {
+    const st = state.current;
+    let cancelled = false;
+    const clear = () => {
+      for (const l of st.dirLayers) (st.kind === "g" ? l.setMap(null) : l.remove());
+      st.dirLayers = [];
+      if (st.dirRenderer) {
+        st.dirRenderer.setMap(null);
+        st.dirRenderer = undefined;
+      }
+    };
+    clear();
+    if (!directions) return;
+    const { from, to } = directions;
+    // Map may still be loading — poll briefly until it exists
+    const run = async () => {
+      for (let i = 0; i < 40 && !st.map && !cancelled; i++) await new Promise(r => setTimeout(r, 150));
+      if (cancelled || !st.map) return;
+      if (st.kind === "g") {
+        const g = (window as any).google;
+        try {
+          const svc = new g.maps.DirectionsService();
+          const res = await svc.route({ origin: from, destination: to, travelMode: g.maps.TravelMode.DRIVING });
+          if (cancelled) return;
+          st.dirRenderer = new g.maps.DirectionsRenderer({ map: st.map, directions: res, suppressMarkers: true, preserveViewport: false, polylineOptions: { strokeColor: "#1E62E0", strokeWeight: 5, strokeOpacity: 0.9 } });
+          const leg = res.routes[0].legs[0];
+          onDirRef.current?.({
+            provider: "google",
+            distanceM: leg.distance.value,
+            durationS: leg.duration.value,
+            steps: leg.steps.map((s: any) => ({ text: String(s.instructions).replace(/<[^>]+>/g, ""), distanceM: s.distance.value })),
+          });
+          return;
+        } catch (e) {
+          console.warn("[PlowMap] Google directions failed, trying OSRM", e);
+        }
+      }
+      // OSRM (free, no key) — used with the OSM map, or as a fallback if the Google Directions API isn't enabled
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&steps=true`;
+        const json = await (await fetch(url)).json();
+        if (cancelled) return;
+        const route = json?.routes?.[0];
+        if (!route) throw new Error(json?.message || "No route found");
+        const coords: LatLng[] = route.geometry.coordinates.map(([lng, lat]: [number, number]) => ({ lat, lng }));
+        if (st.kind === "g") {
+          const g = (window as any).google;
+          st.dirLayers.push(new g.maps.Polyline({ path: coords, map: st.map, strokeColor: "#1E62E0", strokeWeight: 5, strokeOpacity: 0.9 }));
+          const b = new g.maps.LatLngBounds();
+          coords.forEach(c => b.extend(c));
+          st.map.fitBounds(b, 48);
+        } else if (st.L) {
+          const line = st.L.polyline(coords.map(c => [c.lat, c.lng]), { color: "#1E62E0", weight: 5, opacity: 0.9 }).addTo(st.map);
+          st.dirLayers.push(line);
+          st.map.fitBounds(line.getBounds(), { padding: [40, 40] });
+        }
+        const steps: DirectionsStep[] = route.legs[0].steps.map((s: any) => ({ text: osrmInstruction(s), distanceM: s.distance }));
+        onDirRef.current?.({ provider: "osrm", distanceM: route.distance, durationS: route.duration, steps });
+      } catch (e) {
+        onDirRef.current?.(null, e instanceof Error ? e.message : String(e));
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+      clear();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [directions?.from.lat, directions?.from.lng, directions?.to.lat, directions?.to.lng]);
+
   return <div ref={el} className={`plow-map-root p-map ${className ?? ""}`} />;
+}
+
+/** Turn an OSRM step into a readable instruction. */
+function osrmInstruction(step: any): string {
+  const m = step.maneuver ?? {};
+  const road = step.name ? ` onto ${step.name}` : "";
+  const mod = (m.modifier ?? "").replace("slight ", "slight-").replace("sharp ", "sharp-");
+  const dir = mod ? mod.replace("-", " ") : "";
+  switch (m.type) {
+    case "depart": return `Head ${dir || "out"}${step.name ? ` on ${step.name}` : ""}`;
+    case "arrive": return `Arrive at destination${m.modifier ? ` (on the ${m.modifier})` : ""}`;
+    case "turn": return `Turn ${dir}${road}`;
+    case "new name": return `Continue${road}`;
+    case "continue": return `Continue ${dir}${road}`;
+    case "merge": return `Merge ${dir}${road}`;
+    case "on ramp": return `Take the ramp ${dir}${road}`;
+    case "off ramp": return `Take the exit ${dir}${road}`;
+    case "fork": return `Keep ${dir} at the fork${road}`;
+    case "end of road": return `At the end of the road turn ${dir}${road}`;
+    case "roundabout":
+    case "rotary": return `Enter the roundabout${m.exit ? ` and take exit ${m.exit}` : ""}${road}`;
+    case "exit roundabout": return `Exit the roundabout${road}`;
+    default: return `${m.type ? m.type[0].toUpperCase() + m.type.slice(1) : "Continue"} ${dir}${road}`.trim();
+  }
 }

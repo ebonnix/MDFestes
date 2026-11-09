@@ -5,6 +5,7 @@ import PlowMap, { type MapMarker } from "@/plow/PlowMap";
 import { distanceMeters, fmtCoord, fmtDistance, geolocationSupported, getDeviceFix, locationPermission, navigateRouteUrl, navigateUrl, watchPosition, type Fix } from "@/plow/geo";
 import { stampPhoto } from "@/plow/stamp";
 import { proofQueue, type QueuedProof } from "@/plow/queue";
+import { DirectionsPanel, useInAppDirections } from "@/plow/DirectionsPanel";
 
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../server/routers";
@@ -65,6 +66,20 @@ export default function PlowDriver() {
       setHere(f);
       setPerm("granted");
     } else setPerm(await locationPermission());
+  }
+
+  // ---- In-app directions ----
+  const nav = useInAppDirections(here);
+  const mapRef = useRef<HTMLDivElement>(null);
+  function navigateInApp(s: Stop) {
+    const p = s.property;
+    if (p.lat == null || p.lng == null) {
+      window.open(navigateUrl(p), "_blank");
+      return;
+    }
+    if (s.status === "pending") enRoute.mutate({ stopId: s.id });
+    nav.navigateTo({ lat: p.lat, lng: p.lng, address: p.address, label: p.ownerName });
+    mapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   // ---- Offline queue ----
@@ -285,9 +300,10 @@ export default function PlowDriver() {
         {route.data?.route && (
           <>
             {/* Map */}
-            <div className="p-card" style={{ padding: 0, height: 280, overflow: "hidden" }}>
-              <PlowMap markers={markers} path={path} fitKey={`${date}-${stops.length}`} />
+            <div ref={mapRef} className="p-card" style={{ padding: 0, height: nav.target ? 380 : 280, overflow: "hidden", scrollMarginTop: 64 }}>
+              <PlowMap markers={markers} path={nav.target ? undefined : path} fitKey={`${date}-${stops.length}`} directions={nav.directions} onDirections={nav.onDirections} />
             </div>
+            <DirectionsPanel nav={nav} />
 
             {/* Route controls */}
             <div className="flex gap-2">
@@ -345,7 +361,7 @@ export default function PlowDriver() {
                     {/* Actions */}
                     {s.status !== "done" && s.status !== "skipped" && (
                       <div className="grid grid-cols-2 gap-2 mt-3">
-                        <a className="p-btn p-btn-blue" href={navigateUrl(p)} target="_blank" rel="noreferrer" onClick={() => s.status === "pending" && enRoute.mutate({ stopId: s.id })}>🧭 Navigate</a>
+                        <button className="p-btn p-btn-blue" onClick={() => navigateInApp(s)}>🧭 Navigate</button>
                         {s.status !== "arrived" ? (
                           <button className="p-btn p-btn-dark" disabled={arrive.isPending} onClick={() => arrive.mutate({ stopId: s.id })}>📍 I'm here</button>
                         ) : (
@@ -377,20 +393,17 @@ export default function PlowDriver() {
       {/* Sticky "next stop" navigation bar */}
       {route.data?.route && route.data.route.status !== "done" && nextStop && !shot && !completing && !skipping && !sending && (
         <div className="fixed bottom-0 left-0 right-0 z-30 px-3 pb-3 pt-2" style={{ background: "linear-gradient(to top, var(--p-ink-900) 70%, transparent)" }}>
-          <a
+          <button
             className="p-btn p-btn-blue p-btn-xl max-w-2xl mx-auto"
             style={{ justifyContent: "space-between" }}
-            href={navigateUrl(nextStop.property)}
-            target="_blank"
-            rel="noreferrer"
-            onClick={() => nextStop.status === "pending" && enRoute.mutate({ stopId: nextStop.id })}
+            onClick={() => navigateInApp(nextStop)}
           >
             <span className="text-left leading-tight">
               <span className="block text-xs uppercase tracking-wider opacity-80">Navigate to next · stop {stops.indexOf(nextStop) + 1} of {stops.length}</span>
               <span className="block font-bold truncate" style={{ maxWidth: "70vw" }}>{nextStop.property.address}</span>
             </span>
             <span className="text-2xl">🧭</span>
-          </a>
+          </button>
         </div>
       )}
 

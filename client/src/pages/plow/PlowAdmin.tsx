@@ -4,6 +4,7 @@ import { LogoutButton, PlowShell, SERVICE_OPTIONS, Spinner, fmtDT, fmtTime, toda
 import PlowMap, { type MapMarker } from "@/plow/PlowMap";
 import { Field } from "./PlowLogin";
 import { fmtDistance } from "@/plow/geo";
+import { DirectionsPanel, useInAppDirections } from "@/plow/DirectionsPanel";
 
 type Tab = "dispatch" | "properties" | "drivers" | "proofs" | "settings";
 
@@ -68,6 +69,8 @@ function Dispatch() {
   const optimize = trpc.plow.routes.optimize.useMutation({ onSuccess: invalidate });
   const delRoute = trpc.plow.routes.delete.useMutation({ onSuccess: invalidate });
   const copyDay = trpc.plow.routes.copyDay.useMutation({ onSuccess: invalidate });
+
+  const nav = useInAppDirections();
 
   const activeDrivers = (drivers.data ?? []).filter(d => d.active && d.role === "driver" || (d.active && d.role === "admin"));
   const propById = useMemo(() => new Map((properties.data ?? []).map(p => [p.id, p])), [properties.data]);
@@ -170,9 +173,10 @@ function Dispatch() {
       </div>
 
       <div className="space-y-4">
-        <div className="p-card p-0 overflow-hidden" style={{ padding: 0, height: 320 }}>
-          <PlowMap markers={markers} fitKey={date} />
+        <div className="p-card p-0 overflow-hidden" style={{ padding: 0, height: nav.target ? 420 : 320 }}>
+          <PlowMap markers={markers} fitKey={date} directions={nav.directions} onDirections={nav.onDirections} />
         </div>
+        <DirectionsPanel nav={nav} />
 
         {(routes.data ?? []).length === 0 && <div className="p-card text-sm" style={{ color: "var(--p-gray-400)" }}>No routes for {date} yet. Pick a driver, tick properties, and assign.</div>}
 
@@ -209,6 +213,14 @@ function Dispatch() {
                     </div>
                     <span className="p-pill">{s.status.replace("_", " ")}</span>
                     <div className="flex gap-1">
+                      <button
+                        className={`p-btn p-btn-sm ${nav.target?.address === p?.address ? "p-btn-blue" : "p-btn-ghost"}`}
+                        disabled={p?.lat == null}
+                        title={p?.lat == null ? "Property has no coordinates yet" : "Directions from my location"}
+                        onClick={() => p && nav.navigateTo({ lat: p.lat!, lng: p.lng!, address: p.address, label: p.ownerName })}
+                      >
+                        🧭 Navigate
+                      </button>
                       <button className="p-btn p-btn-ghost p-btn-sm" disabled={i === 0} onClick={() => reorder.mutate({ routeId: r.id, stopIds: move(r.stops.map(x => x.id), i, i - 1) })}>↑</button>
                       <button className="p-btn p-btn-ghost p-btn-sm" disabled={i === r.stops.length - 1} onClick={() => reorder.mutate({ routeId: r.id, stopIds: move(r.stops.map(x => x.id), i, i + 1) })}>↓</button>
                       <button className="p-btn p-btn-ghost p-btn-sm" onClick={() => removeStop.mutate({ stopId: s.id })}>✕</button>
