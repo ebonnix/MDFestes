@@ -609,6 +609,20 @@ export const plowRouter = router({
      * "Time on route" = from the driver's first activity (route start or first
      * arrival / first photo, whichever is earliest) to the last proof photo.
      */
+    /** Driver: my own hours per day for a date range (for time cards). */
+    mine: plowProcedure
+      .input(z.object({ from: dateStr, to: dateStr }))
+      .query(async ({ input, ctx }) => {
+        const d = await db();
+        const routes = await d
+          .select()
+          .from(plowRoutes)
+          .where(and(eq(plowRoutes.driverId, ctx.plowUser.uid), gte(plowRoutes.serviceDate, input.from), lte(plowRoutes.serviceDate, input.to)));
+        const days = await computeRouteDays(d, routes);
+        const totalMinutes = days.reduce((a, x) => a + (x.minutes ?? 0), 0);
+        return { days, totalMinutes, stopsDone: days.reduce((a, x) => a + x.done, 0) };
+      }),
+
     drivers: plowAdminProcedure
       .input(z.object({ from: dateStr, to: dateStr }))
       .query(async ({ input }) => {
@@ -618,51 +632,19 @@ export const plowRouter = router({
           .from(plowRoutes)
           .where(and(gte(plowRoutes.serviceDate, input.from), lte(plowRoutes.serviceDate, input.to)));
         if (!routes.length) return { drivers: [], days: [] };
-        const routeIds = routes.map(r => r.id);
-        const stops = await d.select().from(plowStops).where(inArray(plowStops.routeId, routeIds));
-        const proofs = stops.length
-          ? await d.select().from(plowProofs).where(inArray(plowProofs.stopId, stops.map(s => s.id)))
-          : [];
-        const users = await d.select().from(plowUsers);
-        const name = (id: number) => users.find(u => u.id === id)?.name ?? `#${id}`;
-
-        type Day = {
-          driverId: number; driverName: string; date: string; routeId: number; status: string;
-          stops: number; done: number; skipped: number; photos: number; material: number;
-          startedAt: Date | null; lastProofAt: Date | null; minutes: number | null; minutesPerStop: number | null;
-        };
-        const days: Day[] = routes.map(r => {
-          const rs = stops.filter(s => s.routeId === r.id);
-          const ps = proofs.filter(p => rs.some(s => s.id === p.stopId));
-          const done = rs.filter(s => s.status === "done").length;
-          const times: number[] = [];
-          if (r.startedAt) times.push(r.startedAt.getTime());
-          rs.forEach(s => s.arrivedAt && times.push(s.arrivedAt.getTime()));
-          ps.forEach(p => times.push(p.capturedAt.getTime()));
-          const startedAt = times.length ? new Date(Math.min(...times)) : null;
-          const lastProofAt = ps.length ? new Date(Math.max(...ps.map(p => p.capturedAt.getTime()))) : null;
-          const minutes = startedAt && lastProofAt && lastProofAt > startedAt ? Math.round((lastProofAt.getTime() - startedAt.getTime()) / 60000) : null;
-          return {
-            driverId: r.driverId, driverName: name(r.driverId), date: r.serviceDate, routeId: r.id, status: r.status,
-            stops: rs.length, done, skipped: rs.filter(s => s.status === "skipped").length, photos: ps.length,
-            material: rs.reduce((a, s) => a + (s.saltQty ?? 0), 0),
-            startedAt, lastProofAt, minutes, minutesPerStop: minutes != null && done > 0 ? Math.round((minutes / done) * 10) / 10 : null,
-          };
-        });
-
-        const byDriver = new Map<number, Day[]>();
+        const days = await computeRouteDays(d, routes);
+        const byDriver = new Map<number, RouteDay[]>();
         days.forEach(dd => byDriver.set(dd.driverId, [...(byDriver.get(dd.driverId) ?? []), dd]));
         const drivers = Array.from(byDriver.entries()).map(([driverId, ds]) => {
           const minutes = ds.reduce((a, x) => a + (x.minutes ?? 0), 0);
           const done = ds.reduce((a, x) => a + x.done, 0);
           return {
-            driverId, driverName: name(driverId), routeDays: ds.length,
+            driverId, driverName: ds[0].driverName, routeDays: ds.length,
             stops: ds.reduce((a, x) => a + x.stops, 0), done, skipped: ds.reduce((a, x) => a + x.skipped, 0),
             photos: ds.reduce((a, x) => a + x.photos, 0), material: ds.reduce((a, x) => a + x.material, 0),
             minutes, minutesPerStop: done ? Math.round((minutes / done) * 10) / 10 : null,
           };
         }).sort((a, b) => b.done - a.done);
-        days.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.driverName.localeCompare(b.driverName)));
         return { drivers, days };
       }),
   }),
@@ -841,6 +823,42 @@ export const plowRouter = router({
 });
 
 // ---------------------------------------------------------------- helpers
+
+export type RouteDay = {
+  driverId: number; driverName: string; date: string; routeId: number; status: string;
+  stops: number; done: number; skipped: number; photos: number; material: number;
+  startedAt: Date | null; lastProofAt: Date | null; minutes: number | null; minutesPerStop: number | null;
+};
+
+/** Per-route productivity rows; "minutes" = first activity → last proof photo. */
+async function computeRouteDays(d: Awaited<ReturnType<typeof db>>, routes: Array<typeof plowRoutes.$inferSelect>): Promise<RouteDay[]> {
+  if (!routes.length) return [];
+  const routeIds = routes.map(r => r.id);
+  const stops = await d.select().from(plowStops).where(inArray(plowStops.routeId, routeIds));
+  const proofs = stops.length ? await d.select().from(plowProofs).where(inArray(plowProofs.stopId, stops.map(s => s.id))) : [];
+  const users = await d.select().from(plowUsers);
+  const name = (id: number) => users.find(u => u.id === id)?.name ?? `#${id}`;
+  const days: RouteDay[] = routes.map(r => {
+    const rs = stops.filter(s => s.routeId === r.id);
+    const ps = proofs.filter(p => rs.some(s => s.id === p.stopId));
+    const done = rs.filter(s => s.status === "done").length;
+    const times: number[] = [];
+    if (r.startedAt) times.push(r.startedAt.getTime());
+    rs.forEach(s => s.arrivedAt && times.push(s.arrivedAt.getTime()));
+    ps.forEach(p => times.push(p.capturedAt.getTime()));
+    const startedAt = times.length ? new Date(Math.min(...times)) : null;
+    const lastProofAt = ps.length ? new Date(Math.max(...ps.map(p => p.capturedAt.getTime()))) : null;
+    const minutes = startedAt && lastProofAt && lastProofAt > startedAt ? Math.round((lastProofAt.getTime() - startedAt.getTime()) / 60000) : null;
+    return {
+      driverId: r.driverId, driverName: name(r.driverId), date: r.serviceDate, routeId: r.id, status: r.status,
+      stops: rs.length, done, skipped: rs.filter(s => s.status === "skipped").length, photos: ps.length,
+      material: rs.reduce((a, s) => a + (s.saltQty ?? 0), 0),
+      startedAt, lastProofAt, minutes, minutesPerStop: minutes != null && done > 0 ? Math.round((minutes / done) * 10) / 10 : null,
+    };
+  });
+  days.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.driverName.localeCompare(b.driverName)));
+  return days;
+}
 
 async function assertStopOwner(d: Awaited<ReturnType<typeof db>>, stopId: number, user: { uid: number; role: string }) {
   const [stop] = await d.select().from(plowStops).where(eq(plowStops.id, stopId));

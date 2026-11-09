@@ -34,6 +34,7 @@ export type ProofMessage = {
   proofUrl: string; // public page
   photoUrl: string; // absolute image URL
   photoBase64?: string; // optional jpeg for email attachment
+  cc?: string[]; // admin addresses copied on every proof email
 };
 
 function fmtDate(d: Date) {
@@ -71,9 +72,11 @@ export async function sendProofEmail(to: string, m: ProofMessage): Promise<Deliv
     </div>
   </div>`;
 
+  const cc = (m.cc ?? []).map(e => e.trim().toLowerCase()).filter(e => e && e !== to.trim().toLowerCase());
   const body: Record<string, unknown> = {
     from,
     to: [to],
+    ...(cc.length ? { cc: Array.from(new Set(cc)) } : {}),
     subject: `Plowed: ${m.address} — ${fmtDate(m.capturedAt)}`,
     html,
   };
