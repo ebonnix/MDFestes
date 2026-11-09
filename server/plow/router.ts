@@ -10,6 +10,7 @@ import {
   plowRoutes,
   plowStops,
   plowProofs,
+  storageObjects,
   type PlowUser,
 } from "../../drizzle/schema";
 import {
@@ -678,6 +679,30 @@ export const plowRouter = router({
         }
         return { proof, distanceFromPropertyM: distance, weather: wx, delivery, geofenceWarning: distance != null && distance > 150 };
       }),
+
+    /** Driver who took it (or admin): delete a proof photo so it can be retaken. */
+    delete: plowProcedure.input(z.object({ proofId: z.number() })).mutation(async ({ input, ctx }) => {
+      const d = await db();
+      const [p] = await d.select().from(plowProofs).where(eq(plowProofs.id, input.proofId));
+      if (!p) throw new TRPCError({ code: "NOT_FOUND" });
+      if (ctx.plowUser.role !== "admin" && p.driverId !== ctx.plowUser.uid) throw new TRPCError({ code: "FORBIDDEN" });
+      await d.delete(plowProofs).where(eq(plowProofs.id, p.id));
+      // Free the stored bytes too (DB-backed storage)
+      try {
+        await d.delete(storageObjects).where(eq(storageObjects.key, p.photoKey));
+      } catch (e) {
+        console.warn("[plow] could not remove storage object", p.photoKey, e);
+      }
+      // If that was the stop's last "after" photo and the stop was marked done, reopen it
+      if (p.stopId && p.kind === "after") {
+        const [remaining] = await d.select({ id: plowProofs.id }).from(plowProofs).where(and(eq(plowProofs.stopId, p.stopId), eq(plowProofs.kind, "after")));
+        if (!remaining) {
+          const [stop] = await d.select().from(plowStops).where(eq(plowStops.id, p.stopId));
+          if (stop?.status === "done") await d.update(plowStops).set({ status: "arrived", completedAt: null }).where(eq(plowStops.id, stop.id));
+        }
+      }
+      return { success: true };
+    }),
 
     /** Admin (or driver who owns it): re-send the owner notification. */
     resend: plowProcedure
