@@ -239,6 +239,7 @@ function yesterday(date: string) {
 // ============================================================= Properties
 function Properties() {
   const utils = trpc.useUtils();
+  const smsEnabled = !!trpc.plow.auth.status.useQuery(undefined, { staleTime: 5 * 60_000 }).data?.smsConfigured;
   const list = trpc.plow.properties.list.useQuery({ includeInactive: true });
   const invalidate = () => utils.plow.properties.list.invalidate();
   const create = trpc.plow.properties.create.useMutation({ onSuccess: invalidate });
@@ -301,7 +302,7 @@ function Properties() {
             <Field label="Owner / customer name"><input className="p-input" value={form.ownerName} onChange={e => setForm({ ...form, ownerName: e.target.value })} /></Field>
             <Field label="Address" hint="Geocoded automatically for the map and GPS check"><input className="p-input" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="123 Fall River Rd, Estes Park, CO 80517" /></Field>
             <Field label="Owner email (gets proof photo)"><input className="p-input" type="email" value={form.ownerEmail} onChange={e => setForm({ ...form, ownerEmail: e.target.value })} /></Field>
-            <Field label="Owner mobile (gets proof text)"><input className="p-input" value={form.ownerPhone} onChange={e => setForm({ ...form, ownerPhone: e.target.value })} placeholder="970-555-0100" /></Field>
+            <Field label={smsEnabled ? "Owner mobile (gets proof text)" : "Owner mobile"}><input className="p-input" value={form.ownerPhone} onChange={e => setForm({ ...form, ownerPhone: e.target.value })} placeholder="970-555-0100" /></Field>
             <Field label="Gate code / access (optional)"><input className="p-input" value={form.gateCode} onChange={e => setForm({ ...form, gateCode: e.target.value })} /></Field>
             <Field label="Priority">
               <select className="p-select" value={form.priority} onChange={e => setForm({ ...form, priority: Number(e.target.value) })}>
@@ -325,7 +326,7 @@ function Properties() {
           <Field label="Notes for the driver"><textarea className="p-textarea" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Push snow to the north side; don't block the propane tank." /></Field>
           <div className="flex gap-4 text-sm">
             <label className="flex items-center gap-1"><input type="checkbox" checked={form.notifyEmail} onChange={e => setForm({ ...form, notifyEmail: e.target.checked })} /> Email proof to owner</label>
-            <label className="flex items-center gap-1"><input type="checkbox" checked={form.notifySms} onChange={e => setForm({ ...form, notifySms: e.target.checked })} /> Text proof to owner</label>
+            {smsEnabled && <label className="flex items-center gap-1"><input type="checkbox" checked={form.notifySms} onChange={e => setForm({ ...form, notifySms: e.target.checked })} /> Text proof to owner</label>}
           </div>
           <div className="flex gap-2">
             <button className="p-btn p-btn-primary" disabled={!form.ownerName || !form.address || create.isPending || update.isPending} onClick={save}>
@@ -430,6 +431,7 @@ function Drivers() {
 
 // =============================================================== ProofLog
 function ProofLog() {
+  const smsEnabled = !!trpc.plow.auth.status.useQuery(undefined, { staleTime: 5 * 60_000 }).data?.smsConfigured;
   const [from, setFrom] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 14); return d.toISOString().slice(0, 10); });
   const [to, setTo] = useState(todayDenver());
   const [propertyId, setPropertyId] = useState<number | undefined>();
@@ -482,7 +484,7 @@ function ProofLog() {
               {p.weather && <div className="text-xs" style={{ color: "var(--p-gray-400)" }}>{p.weather}</div>}
               <div className="flex items-center gap-2 text-xs pt-1">
                 <span className={`p-pill ${p.emailSentAt ? "p-pill-green" : ""}`}>email {p.emailSentAt ? "✓" : "—"}</span>
-                <span className={`p-pill ${p.smsSentAt ? "p-pill-green" : ""}`}>sms {p.smsSentAt ? "✓" : "—"}</span>
+                {(smsEnabled || p.smsSentAt) && <span className={`p-pill ${p.smsSentAt ? "p-pill-green" : ""}`}>sms {p.smsSentAt ? "✓" : "—"}</span>}
                 <a className="underline ml-auto" href={`/plow/proof/${p.token}`} target="_blank" rel="noreferrer">owner link</a>
                 <button className="p-btn p-btn-ghost p-btn-sm" disabled={resend.isPending} onClick={() => resend.mutate({ proofId: p.id })}>Resend</button>
               </div>

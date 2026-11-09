@@ -259,7 +259,7 @@ export const plowRouter = router({
           ownerEmail: input.ownerEmail || null,
           ownerPhone: input.ownerPhone || null,
           notifyEmail: input.notifyEmail ? 1 : 0,
-          notifySms: input.notifySms ? 1 : 0,
+          notifySms: input.notifySms && smsConfigured() ? 1 : 0,
           services: input.services.join(","),
           triggerDepth: input.triggerDepth,
           priority: input.priority,
@@ -680,13 +680,22 @@ export const plowRouter = router({
       }),
 
     /** Admin (or driver who owns it): re-send the owner notification. */
-    resend: plowProcedure.input(z.object({ proofId: z.number() })).mutation(async ({ input, ctx }) => {
-      const d = await db();
-      const [p] = await d.select().from(plowProofs).where(eq(plowProofs.id, input.proofId));
-      if (!p) throw new TRPCError({ code: "NOT_FOUND" });
-      if (ctx.plowUser.role !== "admin" && p.driverId !== ctx.plowUser.uid) throw new TRPCError({ code: "FORBIDDEN" });
-      return deliverProof(d, p.id);
-    }),
+    resend: plowProcedure
+      .input(z.object({
+        proofId: z.number(),
+        // Explicit send from the driver/admin: choose channels and optionally
+        // override the recipient (e.g. a tenant instead of the owner on file).
+        channels: z.array(z.enum(["email", "sms"])).optional(),
+        email: z.string().email().max(320).optional(),
+        phone: z.string().max(30).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const d = await db();
+        const [p] = await d.select().from(plowProofs).where(eq(plowProofs.id, input.proofId));
+        if (!p) throw new TRPCError({ code: "NOT_FOUND" });
+        if (ctx.plowUser.role !== "admin" && p.driverId !== ctx.plowUser.uid) throw new TRPCError({ code: "FORBIDDEN" });
+        return deliverProof(d, p.id, undefined, input.channels ? { channels: input.channels, email: input.email, phone: input.phone } : undefined);
+      }),
 
     /** Admin: proof log with filters. */
     list: plowAdminProcedure
@@ -753,7 +762,9 @@ async function assertStopOwner(d: Awaited<ReturnType<typeof db>>, stopId: number
   return stop;
 }
 
-async function deliverProof(d: Awaited<ReturnType<typeof db>>, proofId: number, photoBase64?: string) {
+type DeliverOverride = { channels: Array<"email" | "sms">; email?: string; phone?: string };
+
+async function deliverProof(d: Awaited<ReturnType<typeof db>>, proofId: number, photoBase64?: string, override?: DeliverOverride) {
   const [p] = await d.select().from(plowProofs).where(eq(plowProofs.id, proofId));
   if (!p) return {};
   const [property] = await d.select().from(plowProperties).where(eq(plowProperties.id, p.propertyId));
@@ -775,14 +786,21 @@ async function deliverProof(d: Awaited<ReturnType<typeof db>>, proofId: number, 
   };
   const out: { email?: string; sms?: string } = {};
   const errors: string[] = [];
-  if (property.notifyEmail && property.ownerEmail) {
-    const r = await sendProofEmail(property.ownerEmail, msg);
+  // Automatic sends respect the property's notify flags; an explicit "Send proof"
+  // from the driver/admin sends to the chosen channels regardless.
+  const emailTo = override ? (override.channels.includes("email") ? override.email || property.ownerEmail : null) : property.notifyEmail ? property.ownerEmail : null;
+  // Text delivery is only attempted when Twilio is configured (email-only mode otherwise)
+  const smsTo = !smsConfigured() ? null : override ? (override.channels.includes("sms") ? override.phone || property.ownerPhone : null) : property.notifySms ? property.ownerPhone : null;
+  if (override?.channels.includes("email") && !emailTo) out.email = "no email on file";
+  if (override?.channels.includes("sms") && !smsTo) out.sms = smsConfigured() ? "no phone on file" : "texting not enabled";
+  if (emailTo) {
+    const r = await sendProofEmail(emailTo, msg);
     out.email = r.ok ? "sent" : r.skipped ? "not configured" : `failed: ${r.error}`;
     if (r.ok) await d.update(plowProofs).set({ emailSentAt: new Date() }).where(eq(plowProofs.id, p.id));
     else if (!r.skipped) errors.push(`email: ${r.error}`);
   }
-  if (property.notifySms && property.ownerPhone) {
-    const r = await sendProofSms(property.ownerPhone, msg);
+  if (smsTo) {
+    const r = await sendProofSms(smsTo, msg);
     out.sms = r.ok ? "sent" : r.skipped ? "not configured" : `failed: ${r.error}`;
     if (r.ok) await d.update(plowProofs).set({ smsSentAt: new Date() }).where(eq(plowProofs.id, p.id));
     else if (!r.skipped) errors.push(`sms: ${r.error}`);

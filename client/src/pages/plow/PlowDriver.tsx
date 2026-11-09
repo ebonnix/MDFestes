@@ -178,7 +178,7 @@ export default function PlowDriver() {
       setShot(null);
       refresh();
       const d = res.delivery;
-      const parts = [d.email && `email ${d.email}`, d.sms && `text ${d.sms}`].filter(Boolean);
+      const parts = [d.email && `email ${d.email}`, d.sms && d.sms !== "not configured" && `text ${d.sms}`].filter(Boolean);
       if (shot.kind === "after") toast(parts.length ? `Proof saved · ${parts.join(" · ")}` : "Proof saved");
       else toast("Before photo saved");
     } catch (e) {
@@ -447,7 +447,7 @@ export default function PlowDriver() {
             const res = await resendProof.mutateAsync({ proofId: latest.id, ...v });
             setSending(null);
             refresh();
-            const parts = [res.email && `email ${res.email}`, res.sms && `text ${res.sms}`].filter(Boolean);
+            const parts = [res.email && `email ${res.email}`, res.sms && res.sms !== "not configured" && `text ${res.sms}`].filter(Boolean);
             toast(parts.length ? parts.join(" · ") : "Nothing sent");
           }}
         />
@@ -526,8 +526,10 @@ function CompleteDialog({ stop, busy, onClose, onSave }: { stop: Stop; busy: boo
 
 function SendProofDialog({ stop, busy, onClose, onSend }: { stop: Stop; busy: boolean; onClose: () => void; onSend: (v: { channels: Array<"email" | "sms">; email?: string; phone?: string }) => Promise<void> }) {
   const p = stop.property;
+  const status = trpc.plow.auth.status.useQuery(undefined, { staleTime: 5 * 60_000 });
+  const smsEnabled = !!status.data?.smsConfigured;
   const [email, setEmail] = useState(!!p.ownerEmail);
-  const [sms, setSms] = useState(!!p.ownerPhone);
+  const [sms, setSms] = useState(false);
   const [emailTo, setEmailTo] = useState(p.ownerEmail ?? "");
   const [phoneTo, setPhoneTo] = useState(p.ownerPhone ?? "");
   const [err, setErr] = useState<string | null>(null);
@@ -579,6 +581,7 @@ function SendProofDialog({ stop, busy, onClose, onSend }: { stop: Stop; busy: bo
             <input className="p-input mt-1" type="email" inputMode="email" placeholder="owner@example.com" value={emailTo} onChange={e => setEmailTo(e.target.value)} onClick={e => e.stopPropagation()} />
           </div>
         </label>
+        {smsEnabled && (
         <label className="flex items-start gap-3 p-card" style={{ padding: 10, cursor: "pointer" }}>
           <input type="checkbox" className="mt-1" checked={sms} onChange={e => setSms(e.target.checked)} />
           <div className="flex-1">
@@ -586,6 +589,7 @@ function SendProofDialog({ stop, busy, onClose, onSend }: { stop: Stop; busy: bo
             <input className="p-input mt-1" type="tel" inputMode="tel" placeholder="970-555-0100" value={phoneTo} onChange={e => setPhoneTo(e.target.value)} onClick={e => e.stopPropagation()} />
           </div>
         </label>
+        )}
       </div>
       <button className="p-btn p-btn-ghost w-full mt-3" disabled={sharing || !latest} onClick={shareFromPhone}>
         {sharing ? <Spinner /> : <>📱 Text / share from my phone <span className="text-xs opacity-70">(sends from your number)</span></>}
