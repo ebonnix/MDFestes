@@ -452,6 +452,7 @@ function ProofLog() {
   const properties = trpc.plow.properties.list.useQuery({ includeInactive: true });
   const proofs = trpc.plow.proofs.list.useQuery({ from, to, propertyId });
   const resend = trpc.plow.proofs.resend.useMutation({ onSuccess: () => proofs.refetch() });
+  const del = trpc.plow.proofs.delete.useMutation({ onSuccess: () => proofs.refetch() });
 
   function exportCsv() {
     const rows = [["Date/Time (MT)", "Address", "Driver", "Kind", "Lat", "Lng", "Accuracy m", "Dist from property m", "Weather", "Services", "Material", "Email sent", "SMS sent", "Photo"]];
@@ -501,7 +502,17 @@ function ProofLog() {
                 {(smsEnabled || p.smsSentAt) && <span className={`p-pill ${p.smsSentAt ? "p-pill-green" : ""}`}>sms {p.smsSentAt ? "✓" : "—"}</span>}
                 <a className="underline ml-auto" href={`/plow/proof/${p.token}`} target="_blank" rel="noreferrer">owner link</a>
                 <button className="p-btn p-btn-ghost p-btn-sm" disabled={resend.isPending} onClick={() => resend.mutate({ proofId: p.id })}>Resend</button>
+                <button
+                  className="p-btn p-btn-ghost p-btn-sm"
+                  style={{ color: "var(--p-red)" }}
+                  disabled={del.isPending}
+                  title="Delete this photo"
+                  onClick={() => confirm(`Delete this ${p.kind} photo for ${p.address}?\n\nThis removes it from the service record permanently.`) && del.mutate({ proofId: p.id })}
+                >
+                  Delete
+                </button>
               </div>
+              {del.error && <div className="text-xs" style={{ color: "var(--p-red)" }}>{del.error.message}</div>}
               {p.deliveryError && <div className="text-xs" style={{ color: "var(--p-red)" }}>{p.deliveryError}</div>}
             </div>
           </div>
