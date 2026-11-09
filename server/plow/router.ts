@@ -178,6 +178,7 @@ export const plowRouter = router({
       .input(z.object({
         id: z.number(),
         name: z.string().min(1).max(255).optional(),
+        username: z.string().min(3).max(64).regex(/^[a-zA-Z0-9._-]+$/).optional(),
         phone: z.string().max(30).optional().nullable(),
         email: z.string().max(320).optional().nullable(),
         role: z.enum(["admin", "driver"]).optional(),
@@ -188,9 +189,20 @@ export const plowRouter = router({
         const d = await db();
         const set: Record<string, unknown> = {};
         if (input.name !== undefined) set.name = input.name;
+        if (input.username !== undefined) {
+          const username = input.username.toLowerCase();
+          const [taken] = await d.select({ id: plowUsers.id }).from(plowUsers).where(eq(plowUsers.username, username));
+          if (taken && taken.id !== input.id) throw new TRPCError({ code: "CONFLICT", message: "That username is taken" });
+          set.username = username;
+        }
         if (input.phone !== undefined) set.phone = input.phone || null;
         if (input.email !== undefined) set.email = input.email || null;
-        if (input.role !== undefined) set.role = input.role;
+        if (input.role !== undefined) {
+          if (input.role !== "admin" && input.id === ctx.plowUser.uid) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "You can't remove your own admin role" });
+          }
+          set.role = input.role;
+        }
         if (input.active !== undefined) {
           if (!input.active && input.id === ctx.plowUser.uid) {
             throw new TRPCError({ code: "BAD_REQUEST", message: "You can't deactivate your own account" });

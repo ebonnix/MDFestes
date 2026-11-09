@@ -4,6 +4,8 @@ import { LogoutButton, PlowShell, SERVICE_OPTIONS, Spinner, fmtDT, fmtTime, toda
 import PlowMap, { type MapMarker } from "@/plow/PlowMap";
 import { Field } from "./PlowLogin";
 import { fmtDistance } from "@/plow/geo";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "../../../../server/routers";
 import { DirectionsPanel, useInAppDirections } from "@/plow/DirectionsPanel";
 
 type Tab = "dispatch" | "properties" | "drivers" | "proofs" | "analytics" | "settings";
@@ -361,13 +363,17 @@ function Properties() {
             {(list.data ?? []).map(p => (
               <tr key={p.id} style={{ opacity: p.active ? 1 : 0.45 }}>
                 <td className="font-semibold">{p.ownerName}{!p.active && <span className="p-pill ml-2">inactive</span>}</td>
-                <td>{p.address}</td>
+                <td>
+                  <div className="flex items-center gap-2">
+                    <span>{p.address}</span>
+                    <button className="p-btn p-btn-ghost p-btn-sm" onClick={() => { startEdit(p); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Edit</button>
+                  </div>
+                </td>
                 <td className="text-xs">{p.ownerEmail}<br />{p.ownerPhone}</td>
                 <td className="text-xs">{p.services}</td>
                 <td>{p.priority}</td>
                 <td className="p-mono text-xs">{p.lat != null ? `${p.lat.toFixed(4)}, ${p.lng?.toFixed(4)}` : <button className="p-btn p-btn-ghost p-btn-sm" onClick={() => update.mutate({ id: p.id, regeocode: true })}>Geocode</button>}</td>
                 <td className="whitespace-nowrap">
-                  <button className="p-btn p-btn-ghost p-btn-sm" onClick={() => startEdit(p)}>Edit</button>{" "}
                   <button className="p-btn p-btn-ghost p-btn-sm" onClick={() => update.mutate({ id: p.id, active: !p.active })}>{p.active ? "Deactivate" : "Reactivate"}</button>
                 </td>
               </tr>
@@ -381,15 +387,19 @@ function Properties() {
 }
 
 // ================================================================ Drivers
+type DriverRow = inferRouterOutputs<AppRouter>["plow"]["drivers"]["list"][number];
+
 function Drivers() {
   const utils = trpc.useUtils();
+  const me = trpc.plow.auth.me.useQuery();
   const list = trpc.plow.drivers.list.useQuery();
   const invalidate = () => utils.plow.drivers.list.invalidate();
   const create = trpc.plow.drivers.create.useMutation({ onSuccess: () => { invalidate(); setForm(blank); setShow(false); } });
-  const update = trpc.plow.drivers.update.useMutation({ onSuccess: invalidate });
+  const update = trpc.plow.drivers.update.useMutation({ onSuccess: () => { invalidate(); setEditing(null); } });
   const blank = { name: "", username: "", password: "", phone: "", email: "", role: "driver" as "driver" | "admin" };
   const [form, setForm] = useState(blank);
   const [show, setShow] = useState(false);
+  const [editing, setEditing] = useState<DriverRow | null>(null);
 
   return (
     <div className="space-y-4">
@@ -418,27 +428,79 @@ function Drivers() {
           {create.error && <p className="text-sm" style={{ color: "var(--p-red)" }}>{create.error.message}</p>}
         </div>
       )}
+
+      {editing && (
+        <EditDriverCard
+          driver={editing}
+          isSelf={editing.id === me.data?.id}
+          busy={update.isPending}
+          error={update.error?.message}
+          onCancel={() => setEditing(null)}
+          onSave={v => update.mutate({ id: editing.id, ...v })}
+        />
+      )}
+
       <div className="p-card overflow-x-auto" style={{ padding: 0 }}>
         <table className="p-table">
-          <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Phone</th><th>Last seen</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Phone</th><th>Email</th><th>Last seen</th><th></th></tr></thead>
           <tbody>
             {(list.data ?? []).map(d => (
               <tr key={d.id} style={{ opacity: d.active ? 1 : 0.45 }}>
-                <td className="font-semibold">{d.name}</td>
+                <td className="font-semibold">{d.name}{d.id === me.data?.id && <span className="p-pill ml-2">you</span>}</td>
                 <td className="p-mono">{d.username}</td>
                 <td><span className={`p-pill ${d.role === "admin" ? "p-pill-orange" : ""}`}>{d.role}</span></td>
                 <td>{d.phone}</td>
+                <td className="text-xs">{d.email}</td>
                 <td className="text-xs">{d.lastSeenAt ? fmtDT(d.lastSeenAt) : "—"}</td>
                 <td className="whitespace-nowrap">
-                  <button className="p-btn p-btn-ghost p-btn-sm" onClick={() => { const pw = prompt(`New password for ${d.name} (6+ chars):`); if (pw && pw.length >= 6) update.mutate({ id: d.id, newPassword: pw }); }}>Reset password</button>{" "}
-                  <button className="p-btn p-btn-ghost p-btn-sm" onClick={() => update.mutate({ id: d.id, active: !d.active })}>{d.active ? "Deactivate" : "Reactivate"}</button>
+                  <button className="p-btn p-btn-ghost p-btn-sm" onClick={() => { setEditing(d); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Edit</button>{" "}
+                  <button className="p-btn p-btn-ghost p-btn-sm" disabled={d.id === me.data?.id} onClick={() => update.mutate({ id: d.id, active: !d.active })}>{d.active ? "Deactivate" : "Reactivate"}</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {update.error && <p className="text-sm" style={{ color: "var(--p-red)" }}>{update.error.message}</p>}
+      {update.error && !editing && <p className="text-sm" style={{ color: "var(--p-red)" }}>{update.error.message}</p>}
+    </div>
+  );
+}
+
+function EditDriverCard({ driver, isSelf, busy, error, onCancel, onSave }: {
+  driver: DriverRow; isSelf: boolean; busy: boolean; error?: string; onCancel: () => void;
+  onSave: (v: { name: string; username: string; phone: string | null; email: string | null; role: "driver" | "admin"; newPassword?: string }) => void;
+}) {
+  const [f, setF] = useState({ name: driver.name, username: driver.username, phone: driver.phone ?? "", email: driver.email ?? "", role: driver.role as "driver" | "admin", newPassword: "" });
+  return (
+    <div className="p-card space-y-3" style={{ borderColor: "var(--p-orange)" }}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg">Edit {driver.name}</h3>
+        <button className="p-btn p-btn-ghost p-btn-sm" onClick={onCancel}>✕</button>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <Field label="Full name"><input className="p-input" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} /></Field>
+        <Field label="Username" hint="Letters, numbers, . _ - only. They'll log in with the new one right away."><input className="p-input" autoCapitalize="none" value={f.username} onChange={e => setF({ ...f, username: e.target.value.toLowerCase() })} /></Field>
+        <Field label="Phone"><input className="p-input" type="tel" value={f.phone} onChange={e => setF({ ...f, phone: e.target.value })} /></Field>
+        <Field label="Email" hint={f.role === "admin" ? "Admins with an email are CC'd on every proof email" : undefined}><input className="p-input" type="email" value={f.email} onChange={e => setF({ ...f, email: e.target.value })} /></Field>
+        <Field label="Role">
+          <select className="p-select" value={f.role} disabled={isSelf} onChange={e => setF({ ...f, role: e.target.value as any })}>
+            <option value="driver">Driver</option>
+            <option value="admin">Admin (full access)</option>
+          </select>
+        </Field>
+        <Field label="New password (leave blank to keep)"><input className="p-input" value={f.newPassword} onChange={e => setF({ ...f, newPassword: e.target.value })} placeholder="6+ characters" /></Field>
+      </div>
+      {error && <p className="text-sm" style={{ color: "var(--p-red)" }}>{error}</p>}
+      <div className="flex gap-2">
+        <button
+          className="p-btn p-btn-primary"
+          disabled={busy || !f.name.trim() || f.username.length < 3 || (f.newPassword.length > 0 && f.newPassword.length < 6)}
+          onClick={() => onSave({ name: f.name.trim(), username: f.username.trim(), phone: f.phone.trim() || null, email: f.email.trim() || null, role: f.role, newPassword: f.newPassword || undefined })}
+        >
+          {busy ? <Spinner /> : "Save changes"}
+        </button>
+        <button className="p-btn p-btn-ghost" onClick={onCancel}>Cancel</button>
+      </div>
     </div>
   );
 }
