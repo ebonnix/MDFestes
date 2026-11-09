@@ -1,0 +1,125 @@
+/* PlowOps theme — scoped under .plow so the main MDF site is untouched.
+   Tokens from the PlowOps design system: Archivo + IBM Plex Mono, orange on ink. */
+.plow {
+  --p-ink-900: #0e1b2c;
+  --p-ink-800: #16263c;
+  --p-ink-700: #1f3350;
+  --p-paper-50: #faf8f4;
+  --p-paper-100: #f4f1ea;
+  --p-orange: #ff5c1c;
+  --p-orange-600: #e84b10;
+  --p-blue: #1e62e0;
+  --p-green: #1e9e5a;
+  --p-red: #da3a2b;
+  --p-yellow: #ffc400;
+  --p-gray-600: #5f7288;
+  --p-gray-400: #8496ab;
+  --p-gray-300: #b4c0ce;
+  --p-gray-200: #d9e0e8;
+  --p-radius: 3px;
+  --p-font: "Archivo", "Inter", system-ui, sans-serif;
+  --p-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  font-family: var(--p-font);
+  color: var(--p-ink-900);
+  background: var(--p-paper-50);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+.plow.plow-dark {
+  color: var(--p-paper-50);
+  background: var(--p-ink-900);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.plow h1, .plow h2, .plow h3 { font-stretch: 125%; font-weight: 800; letter-spacing: -0.01em; }
+.plow .p-mono { font-family: var(--p-mono); }
+.plow .p-label {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 640;
+  color: var(--p-gray-600);
+}
+.plow-dark .p-label { color: var(--p-gray-400); }
+
+.plow .p-card {
+  background: #fff; border: 1px solid var(--p-gray-200); border-radius: var(--p-radius);
+  padding: 16px;
+}
+.plow-dark .p-card { background: var(--p-ink-800); border-color: var(--p-ink-700); }
+
+.plow .p-input, .plow .p-select, .plow .p-textarea {
+  width: 100%; font: inherit; font-size: 15px; padding: 10px 12px;
+  border: 1px solid var(--p-gray-300); border-radius: var(--p-radius); background: #fff; color: var(--p-ink-900);
+  outline: none;
+}
+.plow .p-input:focus, .plow .p-select:focus, .plow .p-textarea:focus { border-color: var(--p-orange); box-shadow: 0 0 0 3px rgba(255, 92, 28, 0.2); }
+.plow-dark .p-input, .plow-dark .p-select, .plow-dark .p-textarea { background: var(--p-ink-900); color: var(--p-paper-50); border-color: var(--p-ink-700); }
+
+.plow .p-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font: inherit; font-weight: 640; font-size: 15px; padding: 11px 16px; border-radius: var(--p-radius);
+  border: 1px solid transparent; cursor: pointer; transition: background 0.15s, transform 0.05s; text-decoration: none;
+  min-height: 44px; /* touch target */
+}
+.plow .p-btn:active { transform: translateY(1px); }
+.plow .p-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.plow .p-btn-primary { background: var(--p-orange); color: #fff; }
+.plow .p-btn-primary:hover { background: var(--p-orange-600); }
+.plow .p-btn-dark { background: var(--p-ink-900); color: #fff; }
+.plow-dark .p-btn-dark { background: var(--p-paper-50); color: var(--p-ink-900); }
+.plow .p-btn-ghost { background: transparent; border-color: var(--p-gray-300); color: inherit; }
+.plow-dark .p-btn-ghost { border-color: var(--p-ink-700); }
+.plow .p-btn-green { background: var(--p-green); color: #fff; }
+.plow .p-btn-blue { background: var(--p-blue); color: #fff; }
+.plow .p-btn-red { background: var(--p-red); color: #fff; }
+.plow .p-btn-sm { padding: 6px 10px; font-size: 13px; min-height: 32px; }
+.plow .p-btn-xl { padding: 16px 20px; font-size: 18px; min-height: 60px; width: 100%; }
+
+.plow .p-pill {
+  display: inline-block; font-size: 11px; font-weight: 640; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 999px; background: var(--p-gray-200); color: var(--p-ink-900);
+}
+.plow .p-pill-orange { background: var(--p-orange); color: #fff; }
+.plow .p-pill-green { background: var(--p-green); color: #fff; }
+.plow .p-pill-blue { background: var(--p-blue); color: #fff; }
+.plow .p-pill-red { background: var(--p-red); color: #fff; }
+.plow .p-pill-yellow { background: var(--p-yellow); color: var(--p-ink-900); }
+
+.plow .p-tabs { display: flex; gap: 2px; border-bottom: 2px solid var(--p-gray-200); overflow-x: auto; }
+.plow-dark .p-tabs { border-color: var(--p-ink-700); }
+.plow .p-tab {
+  font: inherit; font-weight: 640; font-size: 14px; padding: 10px 14px; background: none; border: 0; cursor: pointer;
+  color: var(--p-gray-600); border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap;
+}
+.plow .p-tab.active { color: var(--p-orange); border-bottom-color: var(--p-orange); }
+
+.plow .p-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.plow .p-table th { text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--p-gray-600); padding: 8px; border-bottom: 1px solid var(--p-gray-200); }
+.plow .p-table td { padding: 8px; border-bottom: 1px solid var(--p-gray-200); vertical-align: top; }
+.plow-dark .p-table th, .plow-dark .p-table td { border-color: var(--p-ink-700); }
+
+.plow .p-map { width: 100%; height: 100%; min-height: 260px; border-radius: var(--p-radius); overflow: hidden; background: var(--p-ink-800); }
+.plow .p-topbar { position: sticky; top: 0; z-index: 20; background: var(--p-ink-900); color: #fff; }
+.plow .p-stop-num {
+  width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--p-mono); font-weight: 600; background: var(--p-ink-700); color: #fff; flex-shrink: 0;
+}
+.plow .p-stop-num.done { background: var(--p-green); }
+.plow .p-stop-num.skipped { background: var(--p-gray-600); }
+.plow .p-stop-num.arrived, .plow .p-stop-num.en_route { background: var(--p-orange); }
+
+/* Leaflet (OSM fallback map) number markers */
+.plow .p-marker {
+  width: 28px; height: 28px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--p-orange);
+  border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center;
+}
+.plow .p-marker span { transform: rotate(45deg); color: #fff; font: 600 12px var(--p-mono); }
+.plow .p-marker.done { background: var(--p-green); }
+.plow .p-marker.truck { background: var(--p-blue); border-radius: 50%; transform: none; }
+.plow .p-marker.truck span { transform: none; }
+.plow .p-marker.me { background: var(--p-yellow); border-radius: 50%; transform: none; }
+.plow .p-marker.me span { transform: none; color: var(--p-ink-900); }
+
+@keyframes p-spin { to { transform: rotate(360deg); } }
+.plow .p-spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: p-spin .8s linear infinite; display: inline-block; }

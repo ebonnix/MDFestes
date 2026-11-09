@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useLocation } from "wouter";
 import { CONSTRUCTION_SERVICES, PLOWING_SERVICES, CONTACT_INFO } from "@shared/services";
 
 const ALL_SERVICES = [...PLOWING_SERVICES, ...CONSTRUCTION_SERVICES];
@@ -33,13 +33,10 @@ const SLUG_MAP: Record<string, string> = {
   "basement-finishing-estes-park": "basements",
 };
 
-interface ServicePageProps {
-  slug?: string;
-}
-
-export default function ServicePage({ slug: propSlug }: ServicePageProps) {
-  const params = useParams<{ slug: string }>();
-  const slug = propSlug || params.slug || "";
+export default function ServicePage() {
+  // Routes are static (e.g. /snow-plowing-estes-park), so derive the slug from the path.
+  const [location] = useLocation();
+  const slug = location.replace(/^\//, "").split(/[?#]/)[0];
   const serviceId = SLUG_MAP[slug];
   const service = ALL_SERVICES.find((s) => s.id === serviceId);
 

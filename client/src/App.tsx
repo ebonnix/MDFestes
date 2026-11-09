@@ -7,12 +7,22 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Admin from "./pages/Admin";
 import ServicePage from "./pages/ServicePage";
+import PlowLogin from "./pages/plow/PlowLogin";
+import PlowAdmin from "./pages/plow/PlowAdmin";
+import PlowDriver from "./pages/plow/PlowDriver";
+import PlowProofView from "./pages/plow/PlowProofView";
 
 function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/admin"} component={Admin} />
+
+      {/* PlowOps — dispatch & proof-of-service app */}
+      <Route path={"/plow"} component={PlowLogin} />
+      <Route path={"/plow/admin"} component={PlowAdmin} />
+      <Route path={"/plow/driver"} component={PlowDriver} />
+      <Route path={"/plow/proof/:token"} component={PlowProofView} />
 
       {/* Plowing & Excavation */}
       <Route path={"/snow-plowing-estes-park"} component={ServicePage} />

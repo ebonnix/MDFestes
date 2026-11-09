@@ -20,11 +20,13 @@ async function ensureSeeded() {
   }
 }
 import { notifyOwner } from "./_core/notification";
+import { plowRouter } from "./plow/router";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "9708895771";
 
 export const appRouter = router({
   system: systemRouter,
+  plow: plowRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
