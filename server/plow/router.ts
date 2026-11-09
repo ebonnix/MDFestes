@@ -771,6 +771,12 @@ async function deliverProof(d: Awaited<ReturnType<typeof db>>, proofId: number, 
   const [stop] = p.stopId ? await d.select().from(plowStops).where(eq(plowStops.id, p.stopId)) : [];
   if (!property) return {};
   const base = appBaseUrl();
+  // CC every active admin (owner) that has an email, plus PLOW_CC_EMAIL if set
+  const admins = await d
+    .select({ email: plowUsers.email })
+    .from(plowUsers)
+    .where(and(eq(plowUsers.role, "admin"), eq(plowUsers.active, 1)));
+  const cc = [...admins.map(a => a.email).filter((e): e is string => !!e), ...(process.env.PLOW_CC_EMAIL ? [process.env.PLOW_CC_EMAIL] : [])];
   const msg = {
     ownerName: property.ownerName,
     address: p.address,
@@ -783,6 +789,7 @@ async function deliverProof(d: Awaited<ReturnType<typeof db>>, proofId: number, 
     proofUrl: `${base}/plow/proof/${p.token}`,
     photoUrl: p.photoUrl.startsWith("http") ? p.photoUrl : `${base}${p.photoUrl}`,
     photoBase64,
+    cc,
   };
   const out: { email?: string; sms?: string } = {};
   const errors: string[] = [];
