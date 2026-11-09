@@ -3,19 +3,19 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
-import { getPublicReviews, getAllReviews, createReview, deleteReview, createContactSubmission, getServiceImages, getAllServiceImages, addServiceImage, deleteServiceImage, setPrimaryServiceImage, getServiceCategories, getServiceCategoriesByType, createServiceCategory, updateServiceCategory, deleteServiceCategory, seedBuiltInCategories, getPublicSettings, setSetting } from "./db";
+import { getPublicReviews, getAllReviews, createReview, deleteReview, createContactSubmission, getServiceImages, getAllServiceImages, addServiceImage, deleteServiceImage, setPrimaryServiceImage, getServiceCategories, getServiceCategoriesByType, createServiceCategory, updateServiceCategory, deleteServiceCategory, seedBuiltInCategories, repairImageUrls, getPublicSettings, setSetting } from "./db";
 import { CONSTRUCTION_SERVICES, PLOWING_SERVICES } from "@shared/services";
 
-// Seed built-in categories on first server start
+// Seed built-in categories on first server start, and repair any stale CDN URLs
 let seeded = false;
 async function ensureSeeded() {
   if (seeded) return;
   seeded = true;
   try {
     await seedBuiltInCategories([...CONSTRUCTION_SERVICES, ...PLOWING_SERVICES]);
+    await repairImageUrls([...CONSTRUCTION_SERVICES, ...PLOWING_SERVICES]);
   } catch (e) {
-    // Non-fatal: if seeding fails, built-in fallback still works
-    console.error("[seed] Failed to seed categories:", e);
+    console.error("[seed] Failed to seed/repair categories:", e);
     seeded = false;
   }
 }
@@ -148,7 +148,7 @@ export const appRouter = router({
       .input(z.object({
         fileName: z.string().max(255),
         contentType: z.string().max(100),
-        fileData: z.string(), // base64
+        fileData: z.string(),
       }))
       .mutation(async ({ input }) => {
         const { storagePut } = await import("./storage");
@@ -159,9 +159,7 @@ export const appRouter = router({
       }),
   }),
 
-  // --- Admin: Service Image Management ---
   serviceImages: router({
-    // Public endpoint: get primary image for a service (no auth needed)
     getPublic: publicProcedure
       .input(z.object({ serviceId: z.string() }))
       .query(async ({ input }) => {
@@ -170,10 +168,8 @@ export const appRouter = router({
         return primary ? { imageUrl: primary.imageUrl } : null;
       }),
 
-    // Public endpoint: get all custom images for all services
     getAllPublic: publicProcedure.query(async () => {
       const images = await getAllServiceImages();
-      // Return a map of serviceId -> primary image URL
       const map: Record<string, string> = {};
       for (const img of images) {
         if (img.isPrimary === 1) {
@@ -201,7 +197,7 @@ export const appRouter = router({
         serviceId: z.string().min(1).max(100),
         fileName: z.string().max(255),
         contentType: z.string().max(100),
-        fileData: z.string(), // base64
+        fileData: z.string(),
         isPrimary: z.boolean().optional(),
       }))
       .mutation(async ({ input }) => {
@@ -249,9 +245,7 @@ export const appRouter = router({
       }),
   }),
 
-  // --- Admin: Service Category Management ---
   categories: router({
-    // Public: get all categories (for public site rendering)
     listPublic: publicProcedure.query(async () => {
       await ensureSeeded();
       return getServiceCategories();
@@ -263,7 +257,6 @@ export const appRouter = router({
         return getServiceCategoriesByType(input.category);
       }),
 
-    // Admin: list all categories
     list: publicProcedure
       .input(z.object({ password: z.string() }))
       .query(async ({ input }) => {
@@ -273,7 +266,6 @@ export const appRouter = router({
         return getServiceCategories();
       }),
 
-    // Admin: create category
     create: publicProcedure
       .input(z.object({
         password: z.string(),
@@ -299,7 +291,6 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // Admin: update category (rename, change description, etc.)
     update: publicProcedure
       .input(z.object({
         password: z.string(),
@@ -315,7 +306,6 @@ export const appRouter = router({
           throw new Error("Invalid admin password");
         }
         const { password, id, ...data } = input;
-        // Filter out undefined values
         const updateData: Record<string, unknown> = {};
         if (data.name !== undefined) updateData.name = data.name;
         if (data.description !== undefined) updateData.description = data.description;
@@ -326,7 +316,6 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // Admin: delete category
     delete: publicProcedure
       .input(z.object({
         password: z.string(),
@@ -341,9 +330,7 @@ export const appRouter = router({
       }),
   }),
 
-  // --- Site Settings (social page links shown on the homepage) ---
   settings: router({
-    // Public: current social links for the site to render
     getPublic: publicProcedure.query(async () => {
       const s = await getPublicSettings();
       return {
@@ -352,7 +339,6 @@ export const appRouter = router({
       };
     }),
 
-    // Admin: update the social links
     update: publicProcedure
       .input(z.object({
         password: z.string(),

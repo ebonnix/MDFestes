@@ -17,11 +17,6 @@ export async function getDb() {
   return _db;
 }
 
-/**
- * Lightweight diagnostics for the /api/health endpoint. Verifies that a
- * DATABASE_URL is present and that a trivial query against the `reviews`
- * table succeeds (i.e. the schema/migrations are in place). Never throws.
- */
 export async function healthCheck(): Promise<{
   databaseUrlSet: boolean;
   dbConnected: boolean;
@@ -179,9 +174,7 @@ export async function deleteServiceImage(id: number) {
 export async function setPrimaryServiceImage(id: number, serviceId: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  // Remove primary from all images of this service
   await db.update(serviceImages).set({ isPrimary: 0 }).where(eq(serviceImages.serviceId, serviceId));
-  // Set new primary
   await db.update(serviceImages).set({ isPrimary: 1 }).where(eq(serviceImages.id, id));
 }
 
@@ -214,10 +207,8 @@ export async function updateServiceCategory(id: number, data: { name?: string; d
 export async function deleteServiceCategory(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  // Get the serviceId before deleting so we can cascade
   const [cat] = await db.select().from(serviceCategories).where(eq(serviceCategories.id, id));
   if (cat) {
-    // Cascade: delete related service_images
     await db.delete(serviceImages).where(eq(serviceImages.serviceId, cat.serviceId));
   }
   await db.delete(serviceCategories).where(eq(serviceCategories.id, id));
@@ -226,10 +217,8 @@ export async function deleteServiceCategory(id: number) {
 export async function seedBuiltInCategories(builtInServices: Array<{ id: string; name: string; description: string; image: string; category: "construction" | "plowing" }>) {
   const db = await getDb();
   if (!db) return;
-  // Check if any categories exist
   const existing = await db.select().from(serviceCategories);
-  if (existing.length > 0) return; // Already seeded
-  // Insert all built-in services
+  if (existing.length > 0) return;
   for (let i = 0; i < builtInServices.length; i++) {
     const svc = builtInServices[i];
     await db.insert(serviceCategories).values({
@@ -240,6 +229,27 @@ export async function seedBuiltInCategories(builtInServices: Array<{ id: string;
       category: svc.category,
       sortOrder: i,
     });
+  }
+}
+
+/**
+ * One-time repair: update any service_categories rows that still point at the
+ * dead Manus CDN (cloudfront.net) or old manus-storage paths to the new
+ * local /images/* paths that ship with the build.
+ */
+export async function repairImageUrls(builtInServices: Array<{ id: string; image: string }>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const rows = await db.select().from(serviceCategories);
+  for (const row of rows) {
+    const img = row.image || "";
+    if (img.includes("cloudfront.net") || img.startsWith("/manus-storage/") || img.startsWith("/images/placeholders/")) {
+      const match = builtInServices.find(s => s.id === row.serviceId);
+      if (match) {
+        console.log(`[repair] Updating image for ${row.serviceId}: ${img} -> ${match.image}`);
+        await db.update(serviceCategories).set({ image: match.image }).where(eq(serviceCategories.id, row.id));
+      }
+    }
   }
 }
 
