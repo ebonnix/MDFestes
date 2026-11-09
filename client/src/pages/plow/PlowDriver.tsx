@@ -30,6 +30,7 @@ export default function PlowDriver() {
   const reopen = trpc.plow.stops.reopen.useMutation({ onSuccess: refresh });
   const ping = trpc.plow.tracking.ping.useMutation();
   const submitProof = trpc.plow.proofs.submit.useMutation();
+  const resendProof = trpc.plow.proofs.resend.useMutation();
 
   // ---- Location: permission + live tracking ----
   const [perm, setPerm] = useState<"granted" | "denied" | "prompt" | "unknown">("unknown");
@@ -196,6 +197,7 @@ export default function PlowDriver() {
   // ---- Complete / skip dialogs ----
   const [completing, setCompleting] = useState<Stop | null>(null);
   const [skipping, setSkipping] = useState<Stop | null>(null);
+  const [sending, setSending] = useState<Stop | null>(null);
 
   // ---- tiny toast ----
   const [msg, setMsg] = useState<string | null>(null);
@@ -353,12 +355,14 @@ export default function PlowDriver() {
                           {stamping ? <Spinner /> : <>📸 Prove it's plowed</>}
                         </button>
                         <button className="p-btn p-btn-green" disabled={!afterProofs.length} title={!afterProofs.length ? "Take the proof photo first" : ""} onClick={() => setCompleting(s)}>✓ Complete</button>
-                        <button className="p-btn p-btn-ghost" onClick={() => setSkipping(s)}>Skip</button>
+                        <button className="p-btn p-btn-dark" disabled={!afterProofs.length} title={!afterProofs.length ? "Take the proof photo first" : ""} onClick={() => setSending(s)}>✉ Send proof</button>
+                        <button className="p-btn p-btn-ghost col-span-2" onClick={() => setSkipping(s)}>Skip this stop</button>
                       </div>
                     )}
                     {(s.status === "done" || s.status === "skipped") && (
-                      <div className="flex gap-2 mt-3">
+                      <div className="flex flex-wrap gap-2 mt-3">
                         <button className="p-btn p-btn-ghost p-btn-sm" onClick={() => takePhoto(s, "after")}>📸 Add photo</button>
+                        {afterProofs.length > 0 && <button className="p-btn p-btn-dark p-btn-sm" onClick={() => setSending(s)}>✉ Send proof</button>}
                         <button className="p-btn p-btn-ghost p-btn-sm" onClick={() => reopen.mutate({ stopId: s.id })}>Reopen</button>
                       </div>
                     )}
@@ -369,6 +373,26 @@ export default function PlowDriver() {
           </>
         )}
       </main>
+
+      {/* Sticky "next stop" navigation bar */}
+      {route.data?.route && route.data.route.status !== "done" && nextStop && !shot && !completing && !skipping && !sending && (
+        <div className="fixed bottom-0 left-0 right-0 z-30 px-3 pb-3 pt-2" style={{ background: "linear-gradient(to top, var(--p-ink-900) 70%, transparent)" }}>
+          <a
+            className="p-btn p-btn-blue p-btn-xl max-w-2xl mx-auto"
+            style={{ justifyContent: "space-between" }}
+            href={navigateUrl(nextStop.property)}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => nextStop.status === "pending" && enRoute.mutate({ stopId: nextStop.id })}
+          >
+            <span className="text-left leading-tight">
+              <span className="block text-xs uppercase tracking-wider opacity-80">Navigate to next · stop {stops.indexOf(nextStop) + 1} of {stops.length}</span>
+              <span className="block font-bold truncate" style={{ maxWidth: "70vw" }}>{nextStop.property.address}</span>
+            </span>
+            <span className="text-2xl">🧭</span>
+          </a>
+        </div>
+      )}
 
       {/* Photo preview / confirm */}
       {shot && (
@@ -410,6 +434,21 @@ export default function PlowDriver() {
             await complete.mutateAsync({ stopId: completing.id, ...v });
             setCompleting(null);
             toast("Stop completed");
+          }}
+        />
+      )}
+      {sending && (
+        <SendProofDialog
+          stop={sending}
+          busy={resendProof.isPending}
+          onClose={() => setSending(null)}
+          onSend={async v => {
+            const latest = [...sending.proofs.filter(p => p.kind === "after")].sort((a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime())[0];
+            const res = await resendProof.mutateAsync({ proofId: latest.id, ...v });
+            setSending(null);
+            refresh();
+            const parts = [res.email && `email ${res.email}`, res.sms && `text ${res.sms}`].filter(Boolean);
+            toast(parts.length ? parts.join(" · ") : "Nothing sent");
           }}
         />
       )}
@@ -479,6 +518,94 @@ function CompleteDialog({ stop, busy, onClose, onSave }: { stop: Stop; busy: boo
         <button className="p-btn p-btn-ghost" onClick={onClose}>Cancel</button>
         <button className="p-btn p-btn-green" disabled={busy || !services.length} onClick={() => onSave({ services, saltQty: salt ? Number(salt) : undefined, note: note || undefined })}>
           {busy ? <Spinner /> : "Mark complete"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function SendProofDialog({ stop, busy, onClose, onSend }: { stop: Stop; busy: boolean; onClose: () => void; onSend: (v: { channels: Array<"email" | "sms">; email?: string; phone?: string }) => Promise<void> }) {
+  const p = stop.property;
+  const [email, setEmail] = useState(!!p.ownerEmail);
+  const [sms, setSms] = useState(!!p.ownerPhone);
+  const [emailTo, setEmailTo] = useState(p.ownerEmail ?? "");
+  const [phoneTo, setPhoneTo] = useState(p.ownerPhone ?? "");
+  const [err, setErr] = useState<string | null>(null);
+  const latest = [...stop.proofs.filter(x => x.kind === "after")].sort((a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime())[0];
+  const channels = [email && "email", sms && "sms"].filter(Boolean) as Array<"email" | "sms">;
+  const [sharing, setSharing] = useState(false);
+
+  /** Native share sheet: driver texts the stamped photo from their own phone (no Twilio). */
+  async function shareFromPhone() {
+    if (!latest) return;
+    setSharing(true);
+    setErr(null);
+    const when = new Date(latest.capturedAt).toLocaleString("en-US", { timeZone: "America/Denver", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    const link = `${location.origin}/plow/proof/${latest.token}`;
+    const text = `MDF Estes Park: ${p.address} was plowed on ${when}. Photo + GPS proof: ${link}  Questions? Call/text 970-889-5771`;
+    try {
+      let files: File[] = [];
+      try {
+        const blob = await (await fetch(latest.photoUrl)).blob();
+        files = [new File([blob], "proof-of-service.jpg", { type: "image/jpeg" })];
+      } catch { /* share text only */ }
+      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+      if (nav.share) {
+        const data: ShareData = nav.canShare && files.length && nav.canShare({ files }) ? { text, files } : { text };
+        await nav.share(data);
+        onClose();
+      } else {
+        // Desktop / unsupported: fall back to an sms: link with the text pre-filled
+        const to = phoneTo.replace(/[^\d+]/g, "");
+        location.href = `sms:${to}${/iPhone|iPad/.test(navigator.userAgent) ? "&" : "?"}body=${encodeURIComponent(text)}`;
+      }
+    } catch (e) {
+      if (!(e instanceof Error && e.name === "AbortError")) setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  return (
+    <Modal onClose={onClose}>
+      <h3 className="text-lg">Send proof · {p.ownerName}</h3>
+      <p className="text-sm mb-3" style={{ color: "var(--p-gray-400)" }}>{p.address}</p>
+      {latest && <img src={latest.photoUrl} alt="proof" className="w-full rounded mb-3" />}
+      <div className="space-y-3">
+        <label className="flex items-start gap-3 p-card" style={{ padding: 10, cursor: "pointer" }}>
+          <input type="checkbox" className="mt-1" checked={email} onChange={e => setEmail(e.target.checked)} />
+          <div className="flex-1">
+            <div className="font-semibold">✉ Email</div>
+            <input className="p-input mt-1" type="email" inputMode="email" placeholder="owner@example.com" value={emailTo} onChange={e => setEmailTo(e.target.value)} onClick={e => e.stopPropagation()} />
+          </div>
+        </label>
+        <label className="flex items-start gap-3 p-card" style={{ padding: 10, cursor: "pointer" }}>
+          <input type="checkbox" className="mt-1" checked={sms} onChange={e => setSms(e.target.checked)} />
+          <div className="flex-1">
+            <div className="font-semibold">💬 Text (MMS with photo)</div>
+            <input className="p-input mt-1" type="tel" inputMode="tel" placeholder="970-555-0100" value={phoneTo} onChange={e => setPhoneTo(e.target.value)} onClick={e => e.stopPropagation()} />
+          </div>
+        </label>
+      </div>
+      <button className="p-btn p-btn-ghost w-full mt-3" disabled={sharing || !latest} onClick={shareFromPhone}>
+        {sharing ? <Spinner /> : <>📱 Text / share from my phone <span className="text-xs opacity-70">(sends from your number)</span></>}
+      </button>
+      {err && <p className="text-sm mt-2" style={{ color: "var(--p-red)" }}>{err}</p>}
+      <div className="grid grid-cols-2 gap-2 mt-3">
+        <button className="p-btn p-btn-ghost" onClick={onClose}>Cancel</button>
+        <button
+          className="p-btn p-btn-primary"
+          disabled={busy || !channels.length || (email && !emailTo) || (sms && !phoneTo)}
+          onClick={async () => {
+            setErr(null);
+            try {
+              await onSend({ channels, email: email ? emailTo.trim() : undefined, phone: sms ? phoneTo.trim() : undefined });
+            } catch (e) {
+              setErr(e instanceof Error ? e.message : String(e));
+            }
+          }}
+        >
+          {busy ? <Spinner /> : `Send ${channels.length === 2 ? "both" : channels[0] === "sms" ? "text" : "email"}`}
         </button>
       </div>
     </Modal>
