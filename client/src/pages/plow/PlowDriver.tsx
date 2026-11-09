@@ -419,8 +419,8 @@ export default function PlowDriver() {
       </main>
 
       {/* Sticky "next stop" navigation bar */}
-      {route.data?.route && route.data.route.status !== "done" && nextStop && !shot && !completing && !skipping && !sending && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 px-3 pb-3 pt-2" style={{ background: "linear-gradient(to top, var(--p-ink-900) 70%, transparent)" }}>
+      {route.data?.route && route.data.route.status !== "done" && nextStop && !shot && !completing && !skipping && !sending && !showHours && (
+        <div className="fixed bottom-0 left-0 right-0 px-3 pb-3 pt-2" style={{ zIndex: 1500, background: "linear-gradient(to top, var(--p-ink-900) 70%, transparent)" }}>
           <button
             className="p-btn p-btn-blue p-btn-xl max-w-2xl mx-auto"
             style={{ justifyContent: "space-between" }}
@@ -514,7 +514,7 @@ export default function PlowDriver() {
       )}
 
       {msg && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded text-sm font-semibold shadow-lg" style={{ background: "var(--p-green)", color: "#fff", maxWidth: "92vw" }}>
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-3 rounded text-sm font-semibold shadow-lg" style={{ background: "var(--p-green)", color: "#fff", maxWidth: "92vw", zIndex: 6000 }}>
           {msg}
         </div>
       )}
@@ -524,7 +524,7 @@ export default function PlowDriver() {
 
 function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center p-3" style={{ background: "rgba(0,0,0,.6)" }} onClick={onClose}>
+    <div className="p-modal fixed inset-0 flex items-end sm:items-center justify-center p-3" style={{ background: "rgba(0,0,0,.6)" }} onClick={onClose}>
       <div className="plow plow-dark p-card w-full max-w-md max-h-[92vh] overflow-auto" style={{ minHeight: 0 }} onClick={e => e.stopPropagation()}>
         {children}
       </div>
