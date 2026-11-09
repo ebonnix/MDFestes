@@ -68,18 +68,15 @@ export async function notifyOwner(
 ): Promise<boolean> {
   const { title, content } = validatePayload(payload);
 
-  if (!ENV.forgeApiUrl) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service URL is not configured.",
-    });
-  }
-
-  if (!ENV.forgeApiKey) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service API key is not configured.",
-    });
+  // Missing notification config is NOT fatal: the owner notification is a
+  // best-effort side effect. Returning false lets callers (review/contact
+  // submit) succeed even when BUILT_IN_FORGE_API_URL / BUILT_IN_FORGE_API_KEY
+  // are not set (e.g. when hosted on Railway rather than the Manus platform).
+  if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
+    console.warn(
+      "[Notification] Notification service not configured; skipping owner notification."
+    );
+    return false;
   }
 
   const endpoint = buildEndpointUrl(ENV.forgeApiUrl);

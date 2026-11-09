@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
-import { Trash2, Star, Lock, ArrowLeft, Plus, Image, Instagram, Upload, CheckCircle, Layers, Pencil } from "lucide-react";
+import { Trash2, Star, Lock, ArrowLeft, Plus, Image, Instagram, Facebook, Upload, CheckCircle, Layers, Pencil, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +10,7 @@ import { CONSTRUCTION_SERVICES, PLOWING_SERVICES } from "@shared/services";
 
 const ALL_SERVICES = [...CONSTRUCTION_SERVICES, ...PLOWING_SERVICES];
 
-type Tab = "reviews" | "images" | "categories" | "instagram";
+type Tab = "reviews" | "images" | "categories" | "social" | "instagram";
 
 export default function Admin() {
   const [password, setPassword] = useState("");
@@ -108,6 +108,12 @@ export default function Admin() {
               <Layers className="w-4 h-4" /> Categories
             </button>
             <button
+              onClick={() => setActiveTab("social")}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md text-sm font-medium transition-all whitespace-nowrap ${activeTab === "social" ? "bg-green-600 text-white" : "text-white/60 hover:text-white/80"}`}
+            >
+              <Share2 className="w-4 h-4" /> Social
+            </button>
+            <button
               onClick={() => setActiveTab("instagram")}
               className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-md text-sm font-medium transition-all whitespace-nowrap ${activeTab === "instagram" ? "bg-green-600 text-white" : "text-white/60 hover:text-white/80"}`}
             >
@@ -118,6 +124,7 @@ export default function Admin() {
           {activeTab === "reviews" && <ReviewsTab password={password} />}
           {activeTab === "images" && <ImagesTab password={password} />}
           {activeTab === "categories" && <CategoriesTab password={password} />}
+          {activeTab === "social" && <SocialTab password={password} />}
           {activeTab === "instagram" && <InstagramTab />}
         </div>
       </div>
@@ -632,6 +639,82 @@ function CategoriesTab({ password }: { password: string }) {
             ))}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// --- Social Links Tab ---
+function SocialTab({ password }: { password: string }) {
+  const { data: current, refetch } = trpc.settings.getPublic.useQuery();
+  const [facebookUrl, setFacebookUrl] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (current && !loaded) {
+      setFacebookUrl(current.facebookUrl || "");
+      setInstagramUrl(current.instagramUrl || "");
+      setLoaded(true);
+    }
+  }, [current, loaded]);
+
+  const save = trpc.settings.update.useMutation({
+    onSuccess: () => {
+      toast.success("Social links saved!");
+      refetch();
+    },
+    onError: () => toast.error("Failed to save. Check your admin password."),
+  });
+
+  const handleSave = () => {
+    save.mutate({
+      password,
+      facebookUrl: facebookUrl.trim(),
+      instagramUrl: instagramUrl.trim(),
+    });
+  };
+
+  return (
+    <div>
+      <h2 className="font-heading text-2xl font-bold text-white mb-2">Social Links</h2>
+      <p className="text-white/50 text-sm mb-6">
+        Set the Facebook and Instagram page links shown in the "Follow Us" section on the homepage.
+        Leave a field blank to show "Coming Soon" instead of a link.
+      </p>
+
+      <div className="space-y-5 max-w-xl">
+        <div>
+          <label className="flex items-center gap-2 text-white/80 text-sm font-medium mb-2">
+            <Facebook className="w-4 h-4 text-blue-400" /> Facebook page URL
+          </label>
+          <Input
+            value={facebookUrl}
+            onChange={(e) => setFacebookUrl(e.target.value)}
+            placeholder="https://facebook.com/yourpage"
+            className="bg-gray-800 border-white/10 text-white"
+          />
+        </div>
+
+        <div>
+          <label className="flex items-center gap-2 text-white/80 text-sm font-medium mb-2">
+            <Instagram className="w-4 h-4 text-purple-400" /> Instagram page URL
+          </label>
+          <Input
+            value={instagramUrl}
+            onChange={(e) => setInstagramUrl(e.target.value)}
+            placeholder="https://instagram.com/yourpage"
+            className="bg-gray-800 border-white/10 text-white"
+          />
+        </div>
+
+        <Button
+          onClick={handleSave}
+          disabled={save.isPending}
+          className="bg-green-600 hover:bg-green-700 text-white"
+        >
+          {save.isPending ? "Saving..." : "Save Social Links"}
+        </Button>
       </div>
     </div>
   );

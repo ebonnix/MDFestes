@@ -1,6 +1,6 @@
 import { eq, desc, and, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, reviews, contactSubmissions, serviceImages, serviceCategories, InsertReview, InsertContactSubmission, InsertServiceImage, InsertServiceCategory } from "../drizzle/schema";
+import { InsertUser, users, reviews, contactSubmissions, serviceImages, serviceCategories, siteSettings, InsertReview, InsertContactSubmission, InsertServiceImage, InsertServiceCategory } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -15,6 +15,34 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+/**
+ * Lightweight diagnostics for the /api/health endpoint. Verifies that a
+ * DATABASE_URL is present and that a trivial query against the `reviews`
+ * table succeeds (i.e. the schema/migrations are in place). Never throws.
+ */
+export async function healthCheck(): Promise<{
+  databaseUrlSet: boolean;
+  dbConnected: boolean;
+  reviewsTableOk: boolean;
+  error: string | null;
+}> {
+  const databaseUrlSet = !!process.env.DATABASE_URL;
+  let dbConnected = false;
+  let reviewsTableOk = false;
+  let error: string | null = null;
+  try {
+    const db = await getDb();
+    if (db) {
+      dbConnected = true;
+      await db.select().from(reviews).limit(1);
+      reviewsTableOk = true;
+    }
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+  }
+  return { databaseUrlSet, dbConnected, reviewsTableOk, error };
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -213,4 +241,26 @@ export async function seedBuiltInCategories(builtInServices: Array<{ id: string;
       sortOrder: i,
     });
   }
+}
+
+// --- Site Settings (key/value; e.g. social page URLs) ---
+
+export async function getPublicSettings(): Promise<Record<string, string>> {
+  const db = await getDb();
+  if (!db) return {};
+  const rows = await db.select().from(siteSettings);
+  const map: Record<string, string> = {};
+  for (const row of rows) {
+    if (row.settingValue != null) map[row.settingKey] = row.settingValue;
+  }
+  return map;
+}
+
+export async function setSetting(key: string, value: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .insert(siteSettings)
+    .values({ settingKey: key, settingValue: value })
+    .onDuplicateKeyUpdate({ set: { settingValue: value } });
 }

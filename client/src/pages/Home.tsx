@@ -135,6 +135,9 @@ export default function Home() {
   // Service images from admin
   const { data: imageOverrides } = trpc.serviceImages.getAllPublic.useQuery();
 
+  // Social links set in the admin panel
+  const { data: social } = trpc.settings.getPublic.useQuery();
+
   // Dynamic categories from DB (seeded with built-ins on first load)
   const { data: dbCategories } = trpc.categories.listPublic.useQuery();
 
@@ -454,24 +457,48 @@ export default function Home() {
               <div className="bg-gray-900 rounded-xl p-6 border border-white/5">
                 <h4 className="text-white/70 text-sm font-medium mb-4 uppercase tracking-wider">Follow Us</h4>
                 <div className="flex gap-3">
-                  <div className="flex-1 flex items-center gap-3 bg-gray-800/60 rounded-lg px-4 py-3 border border-white/5">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center shrink-0">
-                      <Instagram className="w-4 h-4 text-purple-400" />
+                  {social?.instagramUrl ? (
+                    <a href={social.instagramUrl} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center gap-3 bg-gray-800/60 hover:bg-gray-800 rounded-lg px-4 py-3 border border-white/5 transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center shrink-0">
+                        <Instagram className="w-4 h-4 text-purple-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-white/80 text-sm font-medium">Instagram</p>
+                        <span className="text-xs text-green-400">Follow us →</span>
+                      </div>
+                    </a>
+                  ) : (
+                    <div className="flex-1 flex items-center gap-3 bg-gray-800/60 rounded-lg px-4 py-3 border border-white/5">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center shrink-0">
+                        <Instagram className="w-4 h-4 text-purple-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-white/80 text-sm font-medium">Instagram</p>
+                        <span className="text-xs text-green-400">Coming Soon</span>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-white/80 text-sm font-medium">Instagram</p>
-                      <span className="text-xs text-green-400">Coming Soon</span>
+                  )}
+                  {social?.facebookUrl ? (
+                    <a href={social.facebookUrl} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center gap-3 bg-gray-800/60 hover:bg-gray-800 rounded-lg px-4 py-3 border border-white/5 transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center shrink-0">
+                        <Facebook className="w-4 h-4 text-blue-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-white/80 text-sm font-medium">Facebook</p>
+                        <span className="text-xs text-green-400">Follow us →</span>
+                      </div>
+                    </a>
+                  ) : (
+                    <div className="flex-1 flex items-center gap-3 bg-gray-800/60 rounded-lg px-4 py-3 border border-white/5">
+                      <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center shrink-0">
+                        <Facebook className="w-4 h-4 text-blue-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-white/80 text-sm font-medium">Facebook</p>
+                        <span className="text-xs text-green-400">Coming Soon</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex-1 flex items-center gap-3 bg-gray-800/60 rounded-lg px-4 py-3 border border-white/5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center shrink-0">
-                      <Facebook className="w-4 h-4 text-blue-400" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-white/80 text-sm font-medium">Facebook</p>
-                      <span className="text-xs text-green-400">Coming Soon</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
